@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing fid or username" }, { status: 400 });
     }
 
-    // 1. Create signer guna Neynar
+    // Create signer menggunakan Neynar
     const neynarRes = await fetch("https://api.neynar.com/v2/farcaster/signer", {
       method: "POST",
       headers: {
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     const signer = await neynarRes.json();
 
-    // 2. Simpan user ke database
+    // Simpan user ke database
     const { data: userData, error: userError } = await supabase
       .from("users")
       .upsert({ fid, username }, { onConflict: "fid" })
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     if (userError) throw userError;
 
-    // 3. Simpan signer
+    // Simpan signer
     const { error: signerError } = await supabase.from("signers").insert({
       user_id: userData.id,
       signer_uuid: signer.signer_uuid,
