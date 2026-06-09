@@ -14,7 +14,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing fid or username" }, { status: 400 });
     }
 
-    // Create signer menggunakan Neynar
     const neynarRes = await fetch("https://api.neynar.com/v2/farcaster/signer", {
       method: "POST",
       headers: {
@@ -23,36 +22,27 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (!neynarRes.ok) {
-      throw new Error("Failed to create Neynar signer");
-    }
+    if (!neynarRes.ok) throw new Error("Failed to create Neynar signer");
 
     const signer = await neynarRes.json();
 
-    // Simpan user ke database
-    const { data: userData, error: userError } = await supabase
+    const { data: userData } = await supabase
       .from("users")
       .upsert({ fid, username }, { onConflict: "fid" })
       .select()
       .single();
 
-    if (userError) throw userError;
-
-    // Simpan signer
-    const { error: signerError } = await supabase.from("signers").insert({
+    await supabase.from("signers").insert({
       user_id: userData.id,
       signer_uuid: signer.signer_uuid,
       status: "pending",
     });
-
-    if (signerError) throw signerError;
 
     return NextResponse.json({
       success: true,
       signer_uuid: signer.signer_uuid,
       approval_url: signer.signer_approval_url,
     });
-
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
