@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from "react";
+import { SignInButton } from "@farcaster/auth-kit";
 
 const VIBES = [
   { id: "builder", label: "🔨 Builder", desc: "Ship stuff, talk tech on Base" },
@@ -14,20 +15,27 @@ export default function AgentYap() {
   const [handle, setHandle] = useState("afifarioss");
   const [vibe, setVibe] = useState<string | null>(null);
   const [bio, setBio] = useState("");
+  const [fid, setFid] = useState<number | null>(null);
   const [signerUuid, setSignerUuid] = useState("");
   const [signerApprovalUrl, setSignerApprovalUrl] = useState("");
   const [posts, setPosts] = useState<any[]>([]);
   const [isPosting, setIsPosting] = useState(false);
   const [preview, setPreview] = useState("");
 
+  // === SIGN IN WITH FARCASTER ===
   async function connectFarcaster() {
-    if (!vibe) return alert("Pilih vibe dulu");
+    if (!vibe || !fid) {
+      return alert("Pilih vibe dan Sign In dengan Farcaster dulu");
+    }
 
     try {
       const res = await fetch("/api/create-signer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fid: 12345, username: handle }),
+        body: JSON.stringify({ 
+          fid: fid, 
+          username: handle 
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -91,12 +99,28 @@ export default function AgentYap() {
     <div style={{ minHeight: "100vh", background: "#050510", color: "#e0e0ff", padding: 20, fontFamily: "monospace" }}>
       <div style={{ maxWidth: 560, margin: "0 auto" }}>
         <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 26, fontWeight: "bold" }}>AGENTYAP v0.9 (Hosted)</div>
-          <div style={{ color: "#6366f1", fontSize: 13 }}>GROK + NEYNAR • NO KEY NEEDED</div>
+          <div style={{ fontSize: 26, fontWeight: "bold" }}>AGENTYAP v0.9 (Mini App)</div>
+          <div style={{ color: "#6366f1", fontSize: 13 }}>GROK + NEYNAR • HOSTED</div>
         </div>
 
         {step === "setup" && (
           <>
+            {/* SIGN IN WITH FARCASTER */}
+            <div style={{ marginBottom: 20 }}>
+              <SignInButton 
+                onSuccess={(res) => {
+                  console.log("Farcaster connected:", res);
+                  setFid(res.fid);
+                  alert(`✅ Berjaya connect! FID: ${res.fid}`);
+                }} 
+              />
+              {fid && (
+                <p style={{ color: "#22c55e", marginTop: 8, fontSize: 14 }}>
+                  ✅ Connected (FID: {fid})
+                </p>
+              )}
+            </div>
+
             <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 12 }}>
               <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 6 }}>FARCASTER HANDLE</div>
               <input value={handle} onChange={e => setHandle(e.target.value.replace("@",""))} style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8 }} />
@@ -116,7 +140,18 @@ export default function AgentYap() {
               <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Dad from Ipoh building on Base..." style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8, minHeight: 60 }} />
             </div>
 
-            <button onClick={connectFarcaster} style={{ width: "100%", background: "#6366f1", color: "#fff", padding: 16, borderRadius: 12, fontWeight: "bold" }}>
+            <button 
+              onClick={connectFarcaster} 
+              disabled={!fid || !vibe}
+              style={{ 
+                width: "100%", 
+                background: (!fid || !vibe) ? "#374151" : "#6366f1", 
+                color: "#fff", 
+                padding: 16, 
+                borderRadius: 12, 
+                fontWeight: "bold" 
+              }}
+            >
               CONNECT FARCASTER
             </button>
           </>
@@ -138,7 +173,7 @@ export default function AgentYap() {
           <div>
             <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <div>{handle}</div>
+                <div>{handle} (FID: {fid})</div>
                 <button onClick={() => alert("Agent started (demo)")} style={{ background: "#22c55e", color: "#fff", padding: "6px 14px", borderRadius: 6 }}>
                   START AGENT
                 </button>
