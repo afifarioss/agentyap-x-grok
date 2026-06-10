@@ -14,28 +14,20 @@ export default function AgentYap() {
   const [handle, setHandle] = useState("afifarioss");
   const [vibe, setVibe] = useState<string | null>(null);
   const [bio, setBio] = useState("");
-  const [fid, setFid] = useState<number | null>(null);
   const [signerUuid, setSignerUuid] = useState("");
   const [signerApprovalUrl, setSignerApprovalUrl] = useState("");
   const [posts, setPosts] = useState<any[]>([]);
   const [isPosting, setIsPosting] = useState(false);
   const [preview, setPreview] = useState("");
 
-  // === CONNECT FARCASTER (guna FID dari manual input untuk sekarang) ===
   async function connectFarcaster() {
     if (!vibe) return alert("Pilih vibe dulu");
-
-    // Kalau user tak sign in, guna FID dummy dulu (nanti kita improve)
-    const currentFid = fid || 12345;
 
     try {
       const res = await fetch("/api/create-signer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          fid: currentFid, 
-          username: handle 
-        }),
+        body: JSON.stringify({ fid: 12345, username: handle }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -61,7 +53,7 @@ export default function AgentYap() {
     });
     const data = await res.json();
     setPreview(data.text || data.error);
-  };
+  }
 
   const handlePost = async () => {
     if (!signerUuid) return alert("Signer belum ready");
@@ -105,7 +97,26 @@ export default function AgentYap() {
 
         {step === "setup" && (
           <>
-            {/* BUTTON YANG TERUS BUKA FARCASTER SIGN IN */}
+            <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 12 }}>
+              <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 6 }}>FARCASTER HANDLE</div>
+              <input value={handle} onChange={e => setHandle(e.target.value.replace("@",""))} style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8 }} />
+            </div>
+
+            <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 12 }}>
+              <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 8 }}>Pilih Vibe</div>
+              {VIBES.map(v => (
+                <div key={v.id} onClick={() => setVibe(v.id)} style={{ padding: 12, background: vibe === v.id ? "#1f2937" : "#000", marginBottom: 8, borderRadius: 8, cursor: "pointer" }}>
+                  {v.label} — {v.desc}
+                </div>
+              ))}
+            </div>
+
+            <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 20 }}>
+              <div style={{ fontSize: 12, color: "#888", marginBottom: 6 }}>BIO (optional)</div>
+              <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Dad from Ipoh building on Base..." style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8, minHeight: 60 }} />
+            </div>
+
+            {/* BUTTON SIGN IN DENGAN FARCASTER - PINDAH KE BAWAH */}
             <div style={{ marginBottom: 20 }}>
               <button
                 onClick={() => {
@@ -135,40 +146,6 @@ export default function AgentYap() {
                 Tekan button → terus pergi sign in di Farcaster
               </p>
             </div>
-
-            <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 12 }}>
-              <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 6 }}>FARCASTER HANDLE</div>
-              <input value={handle} onChange={e => setHandle(e.target.value.replace("@",""))} style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8 }} />
-            </div>
-
-            <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 12 }}>
-              <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 8 }}>Pilih Vibe</div>
-              {VIBES.map(v => (
-                <div key={v.id} onClick={() => setVibe(v.id)} style={{ padding: 12, background: vibe === v.id ? "#1f2937" : "#000", marginBottom: 8, borderRadius: 8, cursor: "pointer" }}>
-                  {v.label} — {v.desc}
-                </div>
-              ))}
-            </div>
-
-            <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 20 }}>
-              <div style={{ fontSize: 12, color: "#888", marginBottom: 6 }}>BIO (optional)</div>
-              <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Dad from Ipoh building on Base..." style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8, minHeight: 60 }} />
-            </div>
-
-            <button 
-              onClick={connectFarcaster} 
-              disabled={!vibe}
-              style={{ 
-                width: "100%", 
-                background: !vibe ? "#374151" : "#6366f1", 
-                color: "#fff", 
-                padding: 16, 
-                borderRadius: 12, 
-                fontWeight: "bold" 
-              }}
-            >
-              CONNECT FARCASTER
-            </button>
           </>
         )}
 
