@@ -4,6 +4,8 @@ export async function POST(request: NextRequest) {
   try {
     const { vibe, handle, bio } = await request.json();
 
+    const prompt = `Post for @${handle}. Vibe: ${vibe}. ${bio ? "Bio: " + bio : ""}\nReturn only the text.`;
+
     const res = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -14,7 +16,7 @@ export async function POST(request: NextRequest) {
         model: "grok-4.3",
         messages: [
           { role: "system", content: "You are a Farcaster AI agent. Generate ONE short post max 280 chars. End with 1 emoji. Sound human." },
-          { role: "user", content: `Post for @${handle}. Vibe: ${vibe}. ${bio ? `Bio: ${bio}` : ""}\nReturn only the text.` }
+          { role: "user", content: prompt }
         ],
         max_tokens: 280,
         temperature: 0.7,
