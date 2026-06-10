@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthKitProvider } from "@farcaster/auth-kit";
 
 export const metadata: Metadata = {
   title: "AgentYap",
@@ -18,15 +19,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Farcaster Mini App Meta Tags */}
         <meta name="fc:frame" content="vNext" />
         <meta name="fc:miniapp" content="true" />
-        <meta name="fc:frame:image" content="https://agentyap-x-grok.vercel.app/og-image.png" />
-        <meta name="fc:frame:button:1" content="Open AgentYap" />
-        <meta name="fc:frame:button:1:action" content="link" />
-        <meta name="fc:frame:button:1:target" content="https://agentyap-x-grok.vercel.app/" />
       </head>
-      <body>{children}</body>
+      <body>
+        <AuthKitProvider
+          config={{
+            domain: "agentyap-x-grok.vercel.app", // tukar kepada domain kau
+            siweUri: "https://agentyap-x-grok.vercel.app",
+          }}
+        >
+          {children}
+        </AuthKitProvider>
+      </body>
     </html>
   );
 }
