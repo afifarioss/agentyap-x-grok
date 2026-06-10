@@ -116,13 +116,12 @@ export default function AgentYap() {
               <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Dad from Ipoh building on Base..." style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8, minHeight: 60 }} />
             </div>
 
-            {/* FIXED SIGN IN BUTTON */}
+            {/* SIGN IN BUTTON - MOVED TO BOTTOM */}
             <div style={{ marginBottom: 20 }}>
               <button
                 onClick={() => {
-                  // Clean and working SIWF URL
-                  const signInUrl = `https://warpcast.com/\~/siwf?domain=agentyap-x-grok.vercel.app`;
-                  window.open(signInUrl, "_blank");
+                  // Clean working URL
+                  window.open("https://warpcast.com/\~/siwf?domain=agentyap-x-grok.vercel.app", "_blank");
                 }}
                 style={{
                   width: "100%",
