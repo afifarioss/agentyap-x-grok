@@ -21,7 +21,7 @@ export default function AgentYap() {
   const [preview, setPreview] = useState("");
 
   async function connectFarcaster() {
-    if (!vibe) return alert("Pilih vibe dulu");
+    if (!vibe) return alert("Please select a vibe first");
 
     try {
       const res = await fetch("/api/create-signer", {
@@ -41,11 +41,11 @@ export default function AgentYap() {
   }
 
   async function checkApproval() {
-    alert("Approve dulu dalam Warpcast, lepas tu refresh page ni.");
+    alert("Please approve in Warpcast first, then refresh this page.");
   }
 
   async function handlePreview() {
-    if (!vibe) return alert("Pilih vibe dulu");
+    if (!vibe) return alert("Please select a vibe first");
     const res = await fetch("/api/generate-post", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -56,7 +56,7 @@ export default function AgentYap() {
   }
 
   const handlePost = async () => {
-    if (!signerUuid) return alert("Signer belum ready");
+    if (!signerUuid) return alert("Signer not ready yet");
     setIsPosting(true);
     try {
       let text = preview;
@@ -103,7 +103,7 @@ export default function AgentYap() {
             </div>
 
             <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 12 }}>
-              <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 8 }}>Pilih Vibe</div>
+              <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 8 }}>Select Vibe</div>
               {VIBES.map(v => (
                 <div key={v.id} onClick={() => setVibe(v.id)} style={{ padding: 12, background: vibe === v.id ? "#1f2937" : "#000", marginBottom: 8, borderRadius: 8, cursor: "pointer" }}>
                   {v.label} — {v.desc}
@@ -116,7 +116,7 @@ export default function AgentYap() {
               <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Dad from Ipoh building on Base..." style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8, minHeight: 60 }} />
             </div>
 
-            {/* BUTTON SIGN IN DENGAN FARCASTER - PINDAH KE BAWAH */}
+            {/* SIGN IN BUTTON - CLEAN VERSION */}
             <div style={{ marginBottom: 20 }}>
               <button
                 onClick={() => {
@@ -124,10 +124,10 @@ export default function AgentYap() {
                   const siweUri = `https://${domain}`;
                   const redirectUri = `https://${domain}`;
 
-                  window.open(
-                    `https://warpcast.com/\~/siwf?domain=\( {domain}&siweUri= \){encodeURIComponent(siweUri)}&redirectUri=${encodeURIComponent(redirectUri)}`,
-                    "_blank"
-                  );
+                  // Clean and correct SIWF URL
+                  const signInUrl = `https://warpcast.com/\~/siwf?domain=\( {domain}&siweUri= \){encodeURIComponent(siweUri)}&redirectUri=${encodeURIComponent(redirectUri)}`;
+                  
+                  window.open(signInUrl, "_blank");
                 }}
                 style={{
                   width: "100%",
@@ -143,7 +143,7 @@ export default function AgentYap() {
                 🔗 Sign In with Farcaster
               </button>
               <p style={{ fontSize: 12, color: "#888", marginTop: 8, textAlign: "center" }}>
-                Tekan button → terus pergi sign in di Farcaster
+                Click to sign in directly with Farcaster
               </p>
             </div>
           </>
