@@ -1,0 +1,17 @@
+{
+  "accountAssociation": {
+    "header": "",
+    "payload": "",
+    "signature": ""
+  },
+  "frame": {
+    "version": "1",
+    "name": "AgentYap",
+    "iconUrl": "https://agentyap-x-grok.vercel.app/agent-yap-character.png",
+    "homeUrl": "https://agentyap-x-grok.vercel.app",
+    "imageUrl": "https://agentyap-x-grok.vercel.app/og-image.png",
+    "buttonTitle": "Open AgentYap",
+    "splashImageUrl": "https://agentyap-x-grok.vercel.app/agent-yap-character.png",
+    "splashBackgroundColor": "#050510"
+  }
+}
