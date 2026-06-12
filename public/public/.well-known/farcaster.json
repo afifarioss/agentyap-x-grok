@@ -1,8 +1,8 @@
 {
   "accountAssociation": {
-    "header": "",
-    "payload": "",
-    "signature": ""
+    "header": "eyJmaWQiOjMzMzYxMzAsInR5cGUiOiJjdXN0b2R5IiwIa2V5IjoiMHhlQTAyODI1NmIyMTE1QjQ1MWE4ZDZhNTg4OGJFMjI5MjViMTFFCN0FiIn0",
+    "payload": "eyJkb21haW4iOiJhZ2VudHlhcC14LWdyb2stYmtmcy52ZXJjZWwuYXBwIn0",
+    "signature": "y67oP8OO48aBoPIgg21ajdPR1UGUDFtV2G6rBRVqSuEQPzKDeO/JXPmT+jVKYa3I6/GDKNmo9VaAI2RkOM6czRs="
   },
   "frame": {
     "version": "1",
@@ -12,6 +12,7 @@
     "imageUrl": "https://agentyap-x-grok-bkfs.vercel.app/og-image.png",
     "buttonTitle": "Open AgentYap",
     "splashImageUrl": "https://agentyap-x-grok-bkfs.vercel.app/agent-yap-character.png",
-    "splashBackgroundColor": "#050510"
+    "splashBackgroundColor": "#050510",
+    "webhookUrl": "https://agentyap-x-grok-bkfs.vercel.app/api/webhook"
   }
 }
