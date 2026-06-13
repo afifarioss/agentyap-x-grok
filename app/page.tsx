@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from "react";
+import { SignInButton, useProfile } from '@farcaster/auth-kit';
 
 const VIBES = [
   { id: "builder", label: "🔨 Builder", desc: "Ship stuff, talk tech on Base" },
@@ -10,6 +11,7 @@ const VIBES = [
 ];
 
 export default function AgentYap() {
+  const { isAuthenticated, profile } = useProfile();
   const [step, setStep] = useState<"setup" | "signer" | "dashboard">("setup");
   const [handle, setHandle] = useState("afifarioss");
   const [vibe, setVibe] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export default function AgentYap() {
       const res = await fetch("/api/create-signer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fid: 12345, username: handle }),
+        body: JSON.stringify({ fid: profile?.fid || 12345, username: profile?.username || handle }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -116,29 +118,15 @@ export default function AgentYap() {
               <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Dad from Ipoh building on Base..." style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8, minHeight: 60 }} />
             </div>
 
-            {/* SIGN IN BUTTON - MOVED TO BOTTOM */}
-            <div style={{ marginBottom: 20 }}>
-              <button
-                onClick={() => {
-                  // Clean working URL
-                  window.open("https://warpcast.com/\~/siwf?domain=agentyap-x-grok.vercel.app", "_blank");
-                }}
-                style={{
-                  width: "100%",
-                  background: "#6366f1",
-                  color: "#fff",
-                  padding: "14px 20px",
-                  borderRadius: "12px",
-                  fontWeight: "bold",
-                  border: "none",
-                  cursor: "pointer"
-                }}
-              >
-                🔗 Sign In with Farcaster
-              </button>
-              <p style={{ fontSize: 12, color: "#888", marginTop: 8, textAlign: "center" }}>
-                Click to sign in directly with Farcaster
-              </p>
+            {/* REAL FARCASTER SIGN-IN */}
+            <div style={{ marginBottom: 20, display: "flex", justifyContent: "center" }}>
+              {!isAuthenticated ? (
+                <SignInButton onSuccess={() => connectFarcaster()} />
+              ) : (
+                <div style={{ textAlign: "center", color: "#22c55e" }}>
+                  ✅ Signed in as @{profile?.username} (FID: {profile?.fid})
+                </div>
+              )}
             </div>
           </>
         )}
