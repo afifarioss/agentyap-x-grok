@@ -28,7 +28,6 @@ export default function AgentYap() {
   const [preview, setPreview] = useState("");
 
   useEffect(() => {
-    // Callback when Neynar SIWN succeeds
     window.onSignInSuccess = (data: any) => {
       console.log("SIWN success:", data);
       setSignerUuid(data.signer_uuid);
@@ -97,13 +96,21 @@ export default function AgentYap() {
           <>
             <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 12 }}>
               <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 6 }}>FARCASTER HANDLE</div>
-              <input value={handle} onChange={e => setHandle(e.target.value.replace("@",""))} style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8 }} />
+              <input
+                value={handle}
+                onChange={e => setHandle(e.target.value.replace("@", ""))}
+                style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8, border: "none", outline: "none" }}
+              />
             </div>
 
             <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 12 }}>
               <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 8 }}>Select Vibe</div>
               {VIBES.map(v => (
-                <div key={v.id} onClick={() => setVibe(v.id)} style={{ padding: 12, background: vibe === v.id ? "#1f2937" : "#000", marginBottom: 8, borderRadius: 8, cursor: "pointer" }}>
+                <div
+                  key={v.id}
+                  onClick={() => setVibe(v.id)}
+                  style={{ padding: 12, background: vibe === v.id ? "#1f2937" : "#000", marginBottom: 8, borderRadius: 8, cursor: "pointer", border: vibe === v.id ? "1px solid #6366f1" : "1px solid transparent" }}
+                >
                   {v.label} — {v.desc}
                 </div>
               ))}
@@ -111,11 +118,21 @@ export default function AgentYap() {
 
             <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 20 }}>
               <div style={{ fontSize: 12, color: "#888", marginBottom: 6 }}>BIO (optional)</div>
-              <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Dad from Ipoh building on Base..." style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8, minHeight: 60 }} />
+              <textarea
+                value={bio}
+                onChange={e => setBio(e.target.value)}
+                placeholder="Dad from Ipoh building on Base..."
+                style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8, minHeight: 60, border: "none", outline: "none", resize: "none" }}
+              />
             </div>
 
-            {/* NEYNAR SIWN BUTTON */}
-            <div style={{ marginBottom: 20, display: "flex", justifyContent: "center" }}>
+            <div style={{
+              marginBottom: 20,
+              display: "flex",
+              justifyContent: "center",
+              position: "relative",
+              zIndex: 999
+            }}>
               {!isAuthenticated ? (
                 <div
                   className="neynar_signin"
@@ -123,15 +140,22 @@ export default function AgentYap() {
                   data-success-callback="onSignInSuccess"
                   data-theme="dark"
                   data-variant="warpcast"
+                  style={{
+                    cursor: "pointer",
+                    position: "relative",
+                    zIndex: 999,
+                    minWidth: "200px",
+                    minHeight: "48px"
+                  }}
                 ></div>
               ) : (
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ color: "#22c55e", marginBottom: 12 }}>
-                    ✅ Signed in (FID: {fid})
+                <div style={{ textAlign: "center", width: "100%" }}>
+                  <div style={{ color: "#22c55e", marginBottom: 12, fontSize: 16 }}>
+                    ✅ Signed in as @{handle} (FID: {fid})
                   </div>
                   <button
                     onClick={() => setStep("dashboard")}
-                    style={{ background: "#6366f1", color: "#fff", padding: "12px 24px", borderRadius: 10, border: "none", fontWeight: "bold" }}
+                    style={{ background: "#6366f1", color: "#fff", padding: "14px 32px", borderRadius: 10, border: "none", fontWeight: "bold", fontSize: 16, cursor: "pointer", width: "100%" }}
                   >
                     Continue to Dashboard →
                   </button>
@@ -144,26 +168,62 @@ export default function AgentYap() {
         {step === "dashboard" && (
           <div>
             <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <div>{handle} (FID: {fid})</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontWeight: "bold" }}>@{handle}</div>
+                  <div style={{ fontSize: 12, color: "#888" }}>FID: {fid}</div>
+                </div>
                 <div style={{ color: "#22c55e", fontSize: 12 }}>● Connected</div>
               </div>
             </div>
 
+            <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 12 }}>
+              <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 8 }}>Vibe: {vibe || "Not selected"}</div>
+              {VIBES.map(v => (
+                <div
+                  key={v.id}
+                  onClick={() => setVibe(v.id)}
+                  style={{ padding: 10, background: vibe === v.id ? "#1f2937" : "#000", marginBottom: 6, borderRadius: 8, cursor: "pointer", border: vibe === v.id ? "1px solid #6366f1" : "1px solid transparent", fontSize: 13 }}
+                >
+                  {v.label}
+                </div>
+              ))}
+            </div>
+
             <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-              <button onClick={handlePost} disabled={isPosting} style={{ flex: 1, background: "#6366f1", color: "#fff", padding: 14, borderRadius: 10 }}>
+              <button
+                onClick={handlePost}
+                disabled={isPosting}
+                style={{ flex: 1, background: isPosting ? "#444" : "#6366f1", color: "#fff", padding: 14, borderRadius: 10, border: "none", fontWeight: "bold", cursor: isPosting ? "not-allowed" : "pointer" }}
+              >
                 {isPosting ? "Posting..." : "📤 POST NOW"}
               </button>
-              <button onClick={handlePreview} style={{ flex: 1, background: "#333", color: "#fff", padding: 14, borderRadius: 10 }}>
-                Preview
+              <button
+                onClick={handlePreview}
+                style={{ flex: 1, background: "#333", color: "#fff", padding: 14, borderRadius: 10, border: "none", cursor: "pointer" }}
+              >
+                👁 Preview
               </button>
             </div>
 
-            {preview && <div style={{ background: "#111", padding: 14, borderRadius: 10, marginBottom: 16 }}>{preview}</div>}
+            {preview && (
+              <div style={{ background: "#111", padding: 14, borderRadius: 10, marginBottom: 16, border: "1px solid #6366f1", lineHeight: 1.6 }}>
+                <div style={{ fontSize: 11, color: "#6366f1", marginBottom: 8 }}>PREVIEW</div>
+                {preview}
+              </div>
+            )}
 
             <div style={{ background: "#111", padding: 16, borderRadius: 12 }}>
-              <div style={{ fontSize: 13, color: "#888", marginBottom: 10 }}>Your Posts</div>
-              {posts.length === 0 ? "No posts yet" : posts.map((p, i) => <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid #222" }}>{p.text}</div>)}
+              <div style={{ fontSize: 13, color: "#888", marginBottom: 10 }}>Recent Posts</div>
+              {posts.length === 0
+                ? <div style={{ color: "#444", fontSize: 13 }}>No posts yet — tap POST NOW to send your first cast!</div>
+                : posts.map((p, i) => (
+                  <div key={i} style={{ padding: "10px 0", borderBottom: "1px solid #222", fontSize: 13, lineHeight: 1.5 }}>
+                    <div>{p.text}</div>
+                    <div style={{ color: "#444", fontSize: 11, marginTop: 4 }}>{p.time}</div>
+                  </div>
+                ))
+              }
             </div>
           </div>
         )}
