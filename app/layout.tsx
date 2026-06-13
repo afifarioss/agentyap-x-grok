@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "AgentYap",
@@ -35,9 +34,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <Providers>{children}</Providers>
-      </body>
+      <head>
+        <script src="https://neynarxyz.github.io/siwn/raw/1.2.0/index.js" async></script>
+      </head>
+      <body>{children}</body>
     </html>
   );
 }
