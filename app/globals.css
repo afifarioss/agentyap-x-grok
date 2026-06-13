@@ -4,8 +4,7 @@
   padding: 0;
 }
 
-html,
-body {
+html, body {
   max-width: 100vw;
   overflow-x: hidden;
   background: #050510;
@@ -14,33 +13,12 @@ body {
 
 body {
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 input, textarea, button {
   font-family: monospace;
 }
 
-/* Neynar SIWN button fixes */
-.neynar_signin {
-  cursor: pointer !important;
-  z-index: 999 !important;
-  position: relative !important;
-  display: block !important;
-  min-width: 200px !important;
-  min-height: 48px !important;
-}
-
-.neynar_signin button,
-.neynar_signin iframe,
-.neynar_signin div,
-.neynar_signin a {
-  pointer-events: all !important;
-  cursor: pointer !important;
-  z-index: 999 !important;
-}
-
-/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 4px;
 }
