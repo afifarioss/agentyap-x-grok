@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { SignInButton, useProfile } from '@farcaster/auth-kit';
 
 const VIBES = [
   { id: "builder", label: "🔨 Builder", desc: "Ship stuff, talk tech on Base" },
@@ -9,51 +10,52 @@ const VIBES = [
   { id: "family",  label: "👨‍👩‍👧 Family Man", desc: "Real talk, building for family" },
 ];
 
-declare global {
-  interface Window {
-    onSignInSuccess?: (data: any) => void;
-  }
-}
-
 export default function AgentYap() {
-  const [step, setStep] = useState<"setup" | "dashboard">("setup");
+  const { isAuthenticated, profile } = useProfile();
+  const [step, setStep] = useState<"setup" | "signer" | "dashboard">("setup");
   const [handle, setHandle] = useState("afifarioss");
   const [vibe, setVibe] = useState<string | null>(null);
   const [bio, setBio] = useState("");
   const [signerUuid, setSignerUuid] = useState("");
-  const [fid, setFid] = useState<number | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [signerApprovalUrl, setSignerApprovalUrl] = useState("");
   const [posts, setPosts] = useState<any[]>([]);
   const [isPosting, setIsPosting] = useState(false);
   const [preview, setPreview] = useState("");
 
-  useEffect(() => {
-    window.onSignInSuccess = (data: any) => {
-      console.log("SIWN success:", data);
+  async function connectFarcaster() {
+    if (!vibe) return alert("Please select a vibe first");
+    try {
+      const res = await fetch("/api/create-signer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fid: profile?.fid || 3336130,
+          username: profile?.username || handle
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
       setSignerUuid(data.signer_uuid);
-      setFid(data.fid);
-      setHandle(data.user?.username || handle);
-      setIsAuthenticated(true);
-    };
-
-    return () => {
-      window.onSignInSuccess = undefined;
-    };
-  }, []);
+      setSignerApprovalUrl(data.approval_url);
+      setStep("signer");
+    } catch (e: any) {
+      alert(e.message);
+    }
+  }
 
   async function handlePreview() {
     if (!vibe) return alert("Please select a vibe first");
     const res = await fetch("/api/generate-post", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ vibe, handle, bio }),
+      body: JSON.stringify({ vibe, handle: profile?.username || handle, bio }),
     });
     const data = await res.json();
     setPreview(data.text || data.error);
   }
 
   const handlePost = async () => {
-    if (!signerUuid) return alert("Please sign in with Farcaster first");
+    if (!signerUuid) return alert("Signer not ready yet");
     setIsPosting(true);
     try {
       let text = preview;
@@ -61,12 +63,11 @@ export default function AgentYap() {
         const genRes = await fetch("/api/generate-post", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ vibe, handle, bio }),
+          body: JSON.stringify({ vibe, handle: profile?.username || handle, bio }),
         });
         const genData = await genRes.json();
         text = genData.text;
       }
-
       const postRes = await fetch("/api/post-cast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -74,7 +75,6 @@ export default function AgentYap() {
       });
       const postData = await postRes.json();
       if (postData.error) throw new Error(postData.error);
-
       setPosts(p => [{ text, time: new Date().toLocaleTimeString() }, ...p]);
       setPreview("");
       alert("Posted successfully!");
@@ -126,43 +126,44 @@ export default function AgentYap() {
               />
             </div>
 
-            <div style={{
-              marginBottom: 20,
-              display: "flex",
-              justifyContent: "center",
-              position: "relative",
-              zIndex: 999
-            }}>
+            <div style={{ marginBottom: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
               {!isAuthenticated ? (
-                <div
-                  className="neynar_signin"
-                  data-client_id="62bd9f65-e3a5-44a7-875f-7e2bd715ca3a"
-                  data-success-callback="onSignInSuccess"
-                  data-theme="dark"
-                  data-variant="warpcast"
-                  style={{
-                    cursor: "pointer",
-                    position: "relative",
-                    zIndex: 999,
-                    minWidth: "200px",
-                    minHeight: "48px"
-                  }}
-                ></div>
+                <SignInButton />
               ) : (
-                <div style={{ textAlign: "center", width: "100%" }}>
-                  <div style={{ color: "#22c55e", marginBottom: 12, fontSize: 16 }}>
-                    ✅ Signed in as @{handle} (FID: {fid})
+                <>
+                  <div style={{ color: "#22c55e", fontSize: 15 }}>
+                    ✅ Signed in as @{profile?.username} (FID: {profile?.fid})
                   </div>
                   <button
-                    onClick={() => setStep("dashboard")}
-                    style={{ background: "#6366f1", color: "#fff", padding: "14px 32px", borderRadius: 10, border: "none", fontWeight: "bold", fontSize: 16, cursor: "pointer", width: "100%" }}
+                    onClick={connectFarcaster}
+                    style={{ width: "100%", background: "#6366f1", color: "#fff", padding: "14px 20px", borderRadius: 12, fontWeight: "bold", border: "none", cursor: "pointer", fontSize: 16 }}
                   >
-                    Continue to Dashboard →
+                    🔗 Connect & Continue →
                   </button>
-                </div>
+                </>
               )}
             </div>
           </>
+        )}
+
+        {step === "signer" && (
+          <div style={{ textAlign: "center", padding: 30 }}>
+            <div style={{ fontSize: 20, marginBottom: 8 }}>One more step!</div>
+            <div style={{ fontSize: 13, color: "#888", marginBottom: 20 }}>Approve AgentYap to post on your behalf</div>
+            <a
+              href={signerApprovalUrl}
+              target="_blank"
+              style={{ display: "block", background: "#6366f1", color: "#fff", padding: 16, borderRadius: 12, marginBottom: 12, textDecoration: "none", fontWeight: "bold" }}
+            >
+              APPROVE IN WARPCAST →
+            </a>
+            <button
+              onClick={() => setStep("dashboard")}
+              style={{ width: "100%", background: "#22c55e", color: "#fff", padding: 14, borderRadius: 10, border: "none", fontWeight: "bold", cursor: "pointer" }}
+            >
+              ✅ I Approved — Go to Dashboard
+            </button>
+          </div>
         )}
 
         {step === "dashboard" && (
@@ -170,15 +171,15 @@ export default function AgentYap() {
             <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <div style={{ fontWeight: "bold" }}>@{handle}</div>
-                  <div style={{ fontSize: 12, color: "#888" }}>FID: {fid}</div>
+                  <div style={{ fontWeight: "bold" }}>@{profile?.username || handle}</div>
+                  <div style={{ fontSize: 12, color: "#888" }}>FID: {profile?.fid}</div>
                 </div>
                 <div style={{ color: "#22c55e", fontSize: 12 }}>● Connected</div>
               </div>
             </div>
 
             <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 12 }}>
-              <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 8 }}>Vibe: {vibe || "Not selected"}</div>
+              <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 8 }}>Active Vibe</div>
               {VIBES.map(v => (
                 <div
                   key={v.id}
@@ -216,7 +217,7 @@ export default function AgentYap() {
             <div style={{ background: "#111", padding: 16, borderRadius: 12 }}>
               <div style={{ fontSize: 13, color: "#888", marginBottom: 10 }}>Recent Posts</div>
               {posts.length === 0
-                ? <div style={{ color: "#444", fontSize: 13 }}>No posts yet — tap POST NOW to send your first cast!</div>
+                ? <div style={{ color: "#444", fontSize: 13 }}>No posts yet — tap POST NOW!</div>
                 : posts.map((p, i) => (
                   <div key={i} style={{ padding: "10px 0", borderBottom: "1px solid #222", fontSize: 13, lineHeight: 1.5 }}>
                     <div>{p.text}</div>
