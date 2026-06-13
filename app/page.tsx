@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from "react";
-import { SignInButton, useProfile } from '@farcaster/auth-kit';
+import { useState, useEffect } from "react";
 
 const VIBES = [
   { id: "builder", label: "🔨 Builder", desc: "Ship stuff, talk tech on Base" },
@@ -10,41 +9,38 @@ const VIBES = [
   { id: "family",  label: "👨‍👩‍👧 Family Man", desc: "Real talk, building for family" },
 ];
 
+declare global {
+  interface Window {
+    onSignInSuccess?: (data: any) => void;
+  }
+}
+
 export default function AgentYap() {
-  const { isAuthenticated, profile } = useProfile();
-  const [step, setStep] = useState<"setup" | "signer" | "dashboard">("setup");
+  const [step, setStep] = useState<"setup" | "dashboard">("setup");
   const [handle, setHandle] = useState("afifarioss");
   const [vibe, setVibe] = useState<string | null>(null);
   const [bio, setBio] = useState("");
   const [signerUuid, setSignerUuid] = useState("");
-  const [signerApprovalUrl, setSignerApprovalUrl] = useState("");
+  const [fid, setFid] = useState<number | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [posts, setPosts] = useState<any[]>([]);
   const [isPosting, setIsPosting] = useState(false);
   const [preview, setPreview] = useState("");
 
-  async function connectFarcaster() {
-    if (!vibe) return alert("Please select a vibe first");
-
-    try {
-      const res = await fetch("/api/create-signer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fid: profile?.fid || 12345, username: profile?.username || handle }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
+  useEffect(() => {
+    // Callback when Neynar SIWN succeeds
+    window.onSignInSuccess = (data: any) => {
+      console.log("SIWN success:", data);
       setSignerUuid(data.signer_uuid);
-      setSignerApprovalUrl(data.approval_url);
-      setStep("signer");
-    } catch (e: any) {
-      alert(e.message);
-    }
-  }
+      setFid(data.fid);
+      setHandle(data.user?.username || handle);
+      setIsAuthenticated(true);
+    };
 
-  async function checkApproval() {
-    alert("Please approve in Warpcast first, then refresh this page.");
-  }
+    return () => {
+      window.onSignInSuccess = undefined;
+    };
+  }, []);
 
   async function handlePreview() {
     if (!vibe) return alert("Please select a vibe first");
@@ -58,7 +54,7 @@ export default function AgentYap() {
   }
 
   const handlePost = async () => {
-    if (!signerUuid) return alert("Signer not ready yet");
+    if (!signerUuid) return alert("Please sign in with Farcaster first");
     setIsPosting(true);
     try {
       let text = preview;
@@ -118,39 +114,39 @@ export default function AgentYap() {
               <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Dad from Ipoh building on Base..." style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8, minHeight: 60 }} />
             </div>
 
-            {/* REAL FARCASTER SIGN-IN */}
+            {/* NEYNAR SIWN BUTTON */}
             <div style={{ marginBottom: 20, display: "flex", justifyContent: "center" }}>
               {!isAuthenticated ? (
-                <SignInButton onSuccess={() => connectFarcaster()} />
+                <div
+                  className="neynar_signin"
+                  data-client_id="62bd9f65-e3a5-44a7-875f-7e2bd715ca3a"
+                  data-success-callback="onSignInSuccess"
+                  data-theme="dark"
+                  data-variant="warpcast"
+                ></div>
               ) : (
-                <div style={{ textAlign: "center", color: "#22c55e" }}>
-                  ✅ Signed in as @{profile?.username} (FID: {profile?.fid})
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ color: "#22c55e", marginBottom: 12 }}>
+                    ✅ Signed in (FID: {fid})
+                  </div>
+                  <button
+                    onClick={() => setStep("dashboard")}
+                    style={{ background: "#6366f1", color: "#fff", padding: "12px 24px", borderRadius: 10, border: "none", fontWeight: "bold" }}
+                  >
+                    Continue to Dashboard →
+                  </button>
                 </div>
               )}
             </div>
           </>
         )}
 
-        {step === "signer" && (
-          <div style={{ textAlign: "center", padding: 30 }}>
-            <div style={{ fontSize: 20, marginBottom: 16 }}>Approve in Warpcast</div>
-            <a href={signerApprovalUrl} target="_blank" style={{ display: "block", background: "#6366f1", color: "#fff", padding: 16, borderRadius: 12, marginBottom: 12 }}>
-              OPEN IN WARPCAST →
-            </a>
-            <button onClick={checkApproval} style={{ width: "100%", background: "#333", color: "#fff", padding: 14, borderRadius: 10 }}>
-              Check Status
-            </button>
-          </div>
-        )}
-
         {step === "dashboard" && (
           <div>
             <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <div>{handle}</div>
-                <button onClick={() => alert("Agent started (demo)")} style={{ background: "#22c55e", color: "#fff", padding: "6px 14px", borderRadius: 6 }}>
-                  START AGENT
-                </button>
+                <div>{handle} (FID: {fid})</div>
+                <div style={{ color: "#22c55e", fontSize: 12 }}>● Connected</div>
               </div>
             </div>
 
