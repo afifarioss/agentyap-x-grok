@@ -26,18 +26,9 @@ export const metadata: Metadata = {
     description: "AI Agent untuk auto generate & post dekat Farcaster guna Grok",
     images: ["https://agentyap-x-grok.vercel.app/agent-yap-character.png"],
   },
+  other: {
+    "talentapp:project_verification": "57626696a3eb8166b953bf1f74c29b942f3eeb5b555d945f680776d586be2fef49cb02208046e51ff362c62362834de27fd1c02b06c8d39d412132c84d09dcfb",
+  },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="en">
-      <body>
-        <Providers>{children}</Providers>
-      </body>
-    </html>
-  );
-}
+export default
