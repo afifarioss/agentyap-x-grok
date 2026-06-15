@@ -3,7 +3,20 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const { vibe, handle, bio } = await request.json();
-    const res = await fetch("https://api.x.ai/v1/chat/completions", {
+
+    if (!vibe || !handle) {
+      return NextResponse.json({ error: "Missing vibe or handle" }, { status: 400 });
+    }
+
+    const systemPrompt = `You are a Farcaster content agent. Write short, engaging casts (max 280 chars) in the style of a real Base builder.`;
+
+    const userPrompt = `Generate one Farcaster cast for user @${handle}.
+Vibe: ${vibe}
+Bio: ${bio || "Ipoh Dad building on Base for family"}
+
+Make it authentic, valuable, and family-first if possible. No hashtags in the text.`;
+
+    const grokRes = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -12,16 +25,30 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         model: "grok-beta",
         messages: [
-          { role: "system", content: "You are AgentYap. Generate short Farcaster post max 280 chars. End with emoji." },
-          { role: "user", content: `Vibe: \( {vibe}. Handle: @ \){handle}. Bio: ${bio}` }
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
         ],
-        max_tokens: 200,
+        max_tokens: 150,
+        temperature: 0.8,
       }),
     });
-    const data = await res.json();
-    const text = data.choices?.[0]?.message?.content?.trim() || "Family First 💰 Building on Base";
-    return NextResponse.json({ text });
+
+    if (!grokRes.ok) {
+      const err = await grokRes.text();
+      console.error("Grok API error:", err);
+      throw new Error("Grok generation failed");
+    }
+
+    const data = await grokRes.json();
+    const generatedText = data.choices?.[0]?.message?.content?.trim() || 
+      `Building real value on Base with @${handle}. Family First 💰 #Base`;
+
+    return NextResponse.json({ text: generatedText });
+
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Generate post error:", error);
+    return NextResponse.json({ 
+      text: `Real talk from Ipoh Dad @${handle || 'afifarioss'}: Building for family on Base. Family First 💰` 
+    });
   }
 }
