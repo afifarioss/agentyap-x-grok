@@ -8,19 +8,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing signerUuid or text" }, { status: 400 });
     }
 
-    const res = await fetch("https://api.neynar.com/v2/farcaster/cast", {
+    const neynarRes = await fetch("https://api.neynar.com/v2/farcaster/cast", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-api-key": process.env.NEYNAR_API_KEY!,
       },
-      body: JSON.stringify({ signer_uuid: signerUuid, text }),
+      body: JSON.stringify({
+        signer_uuid: signerUuid,
+        text: text,
+        embeds: [],
+      }),
     });
 
-    if (!res.ok) throw new Error("Failed to post cast");
+    if (!neynarRes.ok) {
+      const errText = await neynarRes.text();
+      console.error("Neynar post error:", errText);
+      return NextResponse.json({ error: "Failed to post cast" }, { status: 500 });
+    }
 
-    return NextResponse.json(await res.json());
+    const result = await neynarRes.json();
+    return NextResponse.json({ success: true, result });
+
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Post cast error:", error);
+    return NextResponse.json({ error: "Failed to post cast" }, { status: 500 });
   }
 }
