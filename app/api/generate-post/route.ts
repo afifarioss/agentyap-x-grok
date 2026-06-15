@@ -25,9 +25,7 @@ export async function POST(request: NextRequest) {
             role: "user", 
             content: `Generate ONE Farcaster cast for @${handle}.
 Vibe: ${vibe}
-Bio: ${bio || "Ipoh Dad building on Base for family"}
-
-Make it authentic, family-first if possible, and engaging.` 
+Bio: ${bio || "Building on Base for family"}` 
           }
         ],
         max_tokens: 120,
@@ -53,9 +51,10 @@ Make it authentic, family-first if possible, and engaging.`
   } catch (error: any) {
     console.error("Generate post error:", error.message);
     
-    // Clean English fallback
+    const { handle = 'afifarioss' } = await request.json().catch(() => ({}));
+
     return NextResponse.json({ 
-      text: `Real talk from Ipoh Dad @${handle || 'afifarioss'}. Building sustainable wealth on Base for family. Family First 💰` 
+      text: `Real talk from Ipoh Dad @${handle}. Building sustainable wealth on Base for family. Family First 💰` 
     });
   }
 }
