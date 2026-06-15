@@ -1,6 +1,17 @@
-import { Providers } from './providers';
+import type { Metadata } from "next";
+import { Providers } from "./providers";
+import "./globals.css";
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export const metadata: Metadata = {
+  title: "AgentYap",
+  description: "AI content agent for Farcaster",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="en">
       <body>
