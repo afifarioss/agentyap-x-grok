@@ -15,7 +15,7 @@ export default function AgentYap() {
   const [step, setStep] = useState<"setup" | "signer" | "dashboard">("setup");
   const [handle, setHandle] = useState("afifarioss");
   const [vibe, setVibe] = useState<string | null>(null);
-  const [bio, setBio] = useState("");
+  const [bio, setBio] = useState("Dad from Ipoh building on Base for Danish, Darissa & Damia 💰");
   const [signerUuid, setSignerUuid] = useState("");
   const [signerApprovalUrl, setSignerApprovalUrl] = useState("");
   const [posts, setPosts] = useState<any[]>([]);
@@ -77,7 +77,7 @@ export default function AgentYap() {
       if (postData.error) throw new Error(postData.error);
       setPosts(p => [{ text, time: new Date().toLocaleTimeString() }, ...p]);
       setPreview("");
-      alert("Posted successfully!");
+      alert("Posted successfully! Family First 💰");
     } catch (e: any) {
       alert(e.message);
     }
@@ -85,81 +85,95 @@ export default function AgentYap() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#050510", color: "#e0e0ff", padding: 20, fontFamily: "monospace" }}>
-      <div style={{ maxWidth: 560, margin: "0 auto" }}>
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 26, fontWeight: "bold" }}>AGENTYAP v0.9 (Mini App)</div>
-          <div style={{ color: "#6366f1", fontSize: 13 }}>GROK + NEYNAR • HOSTED</div>
+    <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-black to-zinc-950 text-white font-mono pb-20">
+      <div className="max-w-md mx-auto p-4">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-8 pt-4">
+          <div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center text-3xl shadow-lg">🧠</div>
+          <div>
+            <h1 className="text-4xl font-bold tracking-tighter text-green-400">AGENTYAP</h1>
+            <p className="text-xs text-green-500/70">v1.0 • GROK + NEYNAR • BASE</p>
+            <p className="text-xs text-emerald-400">Ipoh Dad Mode 👨‍👩‍👧</p>
+          </div>
         </div>
 
         {step === "setup" && (
-          <>
-            <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 12 }}>
-              <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 6 }}>FARCASTER HANDLE</div>
+          <div className="space-y-6">
+            <div className="bg-zinc-900/80 border border-green-500/30 rounded-3xl p-6">
+              <label className="text-xs uppercase tracking-widest text-gray-400 mb-2 block">FARCASTER HANDLE</label>
               <input
                 value={handle}
                 onChange={e => setHandle(e.target.value.replace("@", ""))}
-                style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8, border: "none", outline: "none" }}
+                className="w-full bg-black border border-green-500/50 rounded-2xl px-5 py-4 text-lg focus:outline-none focus:border-green-400"
               />
             </div>
 
-            <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 12 }}>
-              <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 8 }}>Select Vibe</div>
-              {VIBES.map(v => (
-                <div
-                  key={v.id}
-                  onClick={() => setVibe(v.id)}
-                  style={{ padding: 12, background: vibe === v.id ? "#1f2937" : "#000", marginBottom: 8, borderRadius: 8, cursor: "pointer", border: vibe === v.id ? "1px solid #6366f1" : "1px solid transparent" }}
-                >
-                  {v.label} — {v.desc}
-                </div>
-              ))}
+            <div className="bg-zinc-900/80 border border-green-500/30 rounded-3xl p-6">
+              <label className="text-xs uppercase tracking-widest text-gray-400 mb-4 block">SELECT VIBE</label>
+              <div className="space-y-3">
+                {VIBES.map(v => (
+                  <div
+                    key={v.id}
+                    onClick={() => setVibe(v.id)}
+                    className={`p-5 rounded-2xl cursor-pointer transition-all border ${
+                      vibe === v.id 
+                        ? 'border-green-400 bg-green-900/30' 
+                        : 'border-green-500/30 hover:border-green-500/50 bg-zinc-950'
+                    }`}
+                  >
+                    <div className="font-medium">{v.label}</div>
+                    <div className="text-sm text-gray-400">{v.desc}</div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 20 }}>
-              <div style={{ fontSize: 12, color: "#888", marginBottom: 6 }}>BIO (optional)</div>
+            <div className="bg-zinc-900/80 border border-green-500/30 rounded-3xl p-6">
+              <label className="text-xs uppercase tracking-widest text-gray-400 mb-2 block">BIO (optional)</label>
               <textarea
                 value={bio}
                 onChange={e => setBio(e.target.value)}
                 placeholder="Dad from Ipoh building on Base..."
-                style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8, minHeight: 60, border: "none", outline: "none", resize: "none" }}
+                className="w-full bg-black border border-green-500/50 rounded-2xl px-5 py-4 h-28 resize-y focus:outline-none focus:border-green-400"
               />
             </div>
 
-            <div style={{ marginBottom: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+            <div className="pt-4">
               {!isAuthenticated ? (
                 <SignInButton />
               ) : (
                 <>
-                  <div style={{ color: "#22c55e", fontSize: 15 }}>
+                  <div className="text-emerald-400 text-center mb-4 text-sm">
                     ✅ Signed in as @{profile?.username} (FID: {profile?.fid})
                   </div>
                   <button
                     onClick={connectFarcaster}
-                    style={{ width: "100%", background: "#6366f1", color: "#fff", padding: "14px 20px", borderRadius: 12, fontWeight: "bold", border: "none", cursor: "pointer", fontSize: 16 }}
+                    className="w-full bg-indigo-600 hover:bg-indigo-500 py-5 rounded-3xl font-bold text-lg active:scale-95 transition"
                   >
                     🔗 Connect & Continue →
                   </button>
                 </>
               )}
             </div>
-          </>
+          </div>
         )}
 
         {step === "signer" && (
-          <div style={{ textAlign: "center", padding: 30 }}>
-            <div style={{ fontSize: 20, marginBottom: 8 }}>One more step!</div>
-            <div style={{ fontSize: 13, color: "#888", marginBottom: 20 }}>Approve AgentYap to post on your behalf</div>
+          <div className="text-center py-12">
+            <div className="text-2xl mb-3">One more step!</div>
+            <p className="text-gray-400 mb-8">Approve AgentYap to post on your behalf</p>
+            
             <a
               href={signerApprovalUrl}
               target="_blank"
-              style={{ display: "block", background: "#6366f1", color: "#fff", padding: 16, borderRadius: 12, marginBottom: 12, textDecoration: "none", fontWeight: "bold" }}
+              className="block bg-indigo-600 hover:bg-indigo-500 py-5 rounded-3xl font-bold mb-4 text-lg"
             >
               APPROVE IN WARPCAST →
             </a>
+            
             <button
               onClick={() => setStep("dashboard")}
-              style={{ width: "100%", background: "#22c55e", color: "#fff", padding: 14, borderRadius: 10, border: "none", fontWeight: "bold", cursor: "pointer" }}
+              className="w-full bg-emerald-600 py-4 rounded-3xl font-bold"
             >
               ✅ I Approved — Go to Dashboard
             </button>
@@ -167,64 +181,69 @@ export default function AgentYap() {
         )}
 
         {step === "dashboard" && (
-          <div>
-            <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div className="space-y-6">
+            <div className="bg-zinc-900/80 border border-green-500/30 rounded-3xl p-6">
+              <div className="flex justify-between items-center">
                 <div>
-                  <div style={{ fontWeight: "bold" }}>@{profile?.username || handle}</div>
-                  <div style={{ fontSize: 12, color: "#888" }}>FID: {profile?.fid}</div>
+                  <div className="font-bold text-xl">@{profile?.username || handle}</div>
+                  <div className="text-xs text-gray-400">FID: {profile?.fid}</div>
                 </div>
-                <div style={{ color: "#22c55e", fontSize: 12 }}>● Connected</div>
+                <div className="text-emerald-400 text-sm">● Connected</div>
               </div>
             </div>
 
-            <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 12 }}>
-              <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 8 }}>Active Vibe</div>
-              {VIBES.map(v => (
-                <div
-                  key={v.id}
-                  onClick={() => setVibe(v.id)}
-                  style={{ padding: 10, background: vibe === v.id ? "#1f2937" : "#000", marginBottom: 6, borderRadius: 8, cursor: "pointer", border: vibe === v.id ? "1px solid #6366f1" : "1px solid transparent", fontSize: 13 }}
-                >
-                  {v.label}
-                </div>
-              ))}
+            <div className="bg-zinc-900/80 border border-green-500/30 rounded-3xl p-6">
+              <div className="text-xs uppercase tracking-widest text-gray-400 mb-4">ACTIVE VIBE</div>
+              <div className="grid grid-cols-2 gap-3">
+                {VIBES.map(v => (
+                  <button
+                    key={v.id}
+                    onClick={() => setVibe(v.id)}
+                    className={`p-4 rounded-2xl border text-left text-sm transition-all ${
+                      vibe === v.id ? 'border-green-400 bg-green-900/30' : 'border-green-500/30'
+                    }`}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+            <div className="flex gap-3">
               <button
                 onClick={handlePost}
                 disabled={isPosting}
-                style={{ flex: 1, background: isPosting ? "#444" : "#6366f1", color: "#fff", padding: 14, borderRadius: 10, border: "none", fontWeight: "bold", cursor: isPosting ? "not-allowed" : "pointer" }}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-600 py-5 rounded-3xl font-bold text-lg active:scale-95 transition"
               >
                 {isPosting ? "Posting..." : "📤 POST NOW"}
               </button>
               <button
                 onClick={handlePreview}
-                style={{ flex: 1, background: "#333", color: "#fff", padding: 14, borderRadius: 10, border: "none", cursor: "pointer" }}
+                className="flex-1 bg-zinc-800 hover:bg-zinc-700 py-5 rounded-3xl font-bold text-lg active:scale-95 transition"
               >
                 👁 Preview
               </button>
             </div>
 
             {preview && (
-              <div style={{ background: "#111", padding: 14, borderRadius: 10, marginBottom: 16, border: "1px solid #6366f1", lineHeight: 1.6 }}>
-                <div style={{ fontSize: 11, color: "#6366f1", marginBottom: 8 }}>PREVIEW</div>
+              <div className="bg-zinc-900/80 border border-green-500/30 rounded-3xl p-6 text-sm leading-relaxed">
+                <div className="text-green-400 text-xs mb-3">PREVIEW POST</div>
                 {preview}
               </div>
             )}
 
-            <div style={{ background: "#111", padding: 16, borderRadius: 12 }}>
-              <div style={{ fontSize: 13, color: "#888", marginBottom: 10 }}>Recent Posts</div>
-              {posts.length === 0
-                ? <div style={{ color: "#444", fontSize: 13 }}>No posts yet — tap POST NOW!</div>
-                : posts.map((p, i) => (
-                  <div key={i} style={{ padding: "10px 0", borderBottom: "1px solid #222", fontSize: 13, lineHeight: 1.5 }}>
+            <div className="bg-zinc-900/80 border border-green-500/30 rounded-3xl p-6">
+              <div className="text-xs uppercase tracking-widest text-gray-400 mb-4">RECENT POSTS</div>
+              {posts.length === 0 ? (
+                <div className="text-gray-500 text-center py-8">No posts yet — tap POST NOW!</div>
+              ) : (
+                posts.map((p, i) => (
+                  <div key={i} className="py-4 border-b border-zinc-800 last:border-none">
                     <div>{p.text}</div>
-                    <div style={{ color: "#444", fontSize: 11, marginTop: 4 }}>{p.time}</div>
+                    <div className="text-xs text-gray-500 mt-2">{p.time}</div>
                   </div>
                 ))
-              }
+              )}
             </div>
           </div>
         )}
