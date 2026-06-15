@@ -3,8 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const { vibe, handle, bio } = await request.json();
-
-    const prompt = `Post for @${handle}. Vibe: ${vibe}. ${bio ? "Bio: " + bio : ""}\nReturn only the text.`;
+    const prompt = `Post for Ipoh Dad @\( {handle} ( \){vibe}). Bio: ${bio || 'Family First 💰'}. Real talk, short, engaging.`;
 
     const res = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
@@ -13,18 +12,19 @@ export async function POST(request: NextRequest) {
         "Authorization": `Bearer ${process.env.GROK_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "grok-4.3",
+        model: "grok-beta", // stable model
         messages: [
-          { role: "system", content: "You are a Farcaster AI agent. Generate ONE short post max 280 chars. End with 1 emoji. Sound human." },
+          { role: "system", content: "You are AgentYap - helpful Farcaster agent for Base builders. Max 280 chars. End with emoji." },
           { role: "user", content: prompt }
         ],
-        max_tokens: 280,
-        temperature: 0.7,
+        max_tokens: 200,
+        temperature: 0.8,
       }),
     });
 
     const data = await res.json();
-    const text = data.choices?.[0]?.message?.content?.trim().replace(/^["']|["']$/g, "") || "Error generating post";
+    let text = data.choices?.[0]?.message?.content?.trim() || "Ipoh Dad building on Base Family First 💰 @afifarioss";
+    text = text.replace(/^["']|["']$/g, "");
 
     return NextResponse.json({ text });
   } catch (error: any) {
