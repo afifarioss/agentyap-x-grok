@@ -15,20 +15,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (!neynarRes.ok) {
-      const err = await neynarRes.text();
-      throw new Error(`Neynar: ${err}`);
-    }
+    if (!neynarRes.ok) throw new Error("Neynar signer failed");
 
     const signer = await neynarRes.json();
 
     return NextResponse.json({
-      success: true,
       signer_uuid: signer.signer_uuid,
       approval_url: signer.signer_approval_url || signer.deep_link_url,
     });
   } catch (error: any) {
-    console.error(error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
