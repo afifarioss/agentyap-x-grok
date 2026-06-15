@@ -4,17 +4,11 @@ export async function POST(request: NextRequest) {
   try {
     const { vibe, handle, bio } = await request.json();
 
+    console.log("Generate request:", { vibe, handle, bio }); // untuk debug
+
     if (!vibe || !handle) {
       return NextResponse.json({ error: "Missing vibe or handle" }, { status: 400 });
     }
-
-    const systemPrompt = `You are a Farcaster content agent. Write short, engaging casts (max 280 chars) in the style of a real Base builder.`;
-
-    const userPrompt = `Generate one Farcaster cast for user @${handle}.
-Vibe: ${vibe}
-Bio: ${bio || "Ipoh Dad building on Base for family"}
-
-Make it authentic, valuable, and family-first if possible. No hashtags in the text.`;
 
     const grokRes = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
@@ -25,30 +19,44 @@ Make it authentic, valuable, and family-first if possible. No hashtags in the te
       body: JSON.stringify({
         model: "grok-beta",
         messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
+          { 
+            role: "system", 
+            content: "You are a helpful Farcaster content agent. Write short, natural casts (under 250 chars) for Base builders. Keep it real and valuable." 
+          },
+          { 
+            role: "user", 
+            content: `Generate ONE Farcaster cast for @${handle}.
+Vibe: ${vibe}
+Bio: ${bio || "Ipoh Dad building on Base for family"}
+
+Make it authentic, family-first, and engaging.` 
+          }
         ],
-        max_tokens: 150,
-        temperature: 0.8,
+        max_tokens: 120,
+        temperature: 0.7,
       }),
     });
 
     if (!grokRes.ok) {
-      const err = await grokRes.text();
-      console.error("Grok API error:", err);
-      throw new Error("Grok generation failed");
+      const errText = await grokRes.text();
+      console.error("Grok API failed:", grokRes.status, errText);
+      throw new Error(`Grok error ${grokRes.status}`);
     }
 
     const data = await grokRes.json();
-    const generatedText = data.choices?.[0]?.message?.content?.trim() || 
-      `Building real value on Base with @${handle}. Family First 💰 #Base`;
+    let text = data.choices?.[0]?.message?.content?.trim();
 
-    return NextResponse.json({ text: generatedText });
+    if (!text) {
+      throw new Error("No content from Grok");
+    }
+
+    return NextResponse.json({ text });
 
   } catch (error: any) {
-    console.error("Generate post error:", error);
+    console.error("Generate post error:", error.message);
+    // Fallback yang lebih baik
     return NextResponse.json({ 
-      text: `Real talk from Ipoh Dad @${handle || 'afifarioss'}: Building for family on Base. Family First 💰` 
+      text: `Real talk from Ipoh Dad @${handle}. Building sustainable wealth on Base for my family (Danish, Darissa, Damia). Family First 💰` 
     });
   }
 }
