@@ -4,8 +4,6 @@ export async function POST(request: NextRequest) {
   try {
     const { vibe, handle, bio } = await request.json();
 
-    console.log("Generate request:", { vibe, handle, bio }); // untuk debug
-
     if (!vibe || !handle) {
       return NextResponse.json({ error: "Missing vibe or handle" }, { status: 400 });
     }
@@ -29,7 +27,7 @@ export async function POST(request: NextRequest) {
 Vibe: ${vibe}
 Bio: ${bio || "Ipoh Dad building on Base for family"}
 
-Make it authentic, family-first, and engaging.` 
+Make it authentic, family-first if possible, and engaging.` 
           }
         ],
         max_tokens: 120,
@@ -54,9 +52,10 @@ Make it authentic, family-first, and engaging.`
 
   } catch (error: any) {
     console.error("Generate post error:", error.message);
-    // Fallback yang lebih baik
+    
+    // Clean English fallback
     return NextResponse.json({ 
-      text: `Real talk from Ipoh Dad @${handle}. Building sustainable wealth on Base for my family (Danish, Darissa, Damia). Family First 💰` 
+      text: `Real talk from Ipoh Dad @${handle || 'afifarioss'}. Building sustainable wealth on Base for family. Family First 💰` 
     });
   }
 }
