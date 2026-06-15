@@ -52,7 +52,7 @@ GROK_API_KEY=xai-...
 NEYNAR_API_KEY=...
 
 
-HOW IT WORKS
+#How it work
 
 User signs in with Farcaster
 
@@ -63,8 +63,8 @@ User signs in with Farcaster
 5. Use Cases
 
 
-USED CASES
 
+#USED CASES
 
 . Daily content creation for Base builders
 . Hackathon rapid prototyping
@@ -73,7 +73,7 @@ USED CASES
 
 
 
-Built for the Base ecosystem.
+#Built for the Base ecosystem.
 
 Open for collaborations, grants, and feedback.
 DM @afifarioss on X / Farcaster.
