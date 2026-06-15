@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { fid, username } = await request.json();
+    const body = await request.json();
+    const { fid, username } = body;
 
     if (!fid || !username) {
       return NextResponse.json({ error: "Missing fid or username" }, { status: 400 });
     }
 
+    // Call Neynar directly
     const neynarRes = await fetch("https://api.neynar.com/v2/farcaster/signer", {
       method: "POST",
       headers: {
@@ -17,9 +19,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (!neynarRes.ok) {
-      const errText = await neynarRes.text();
-      console.error("Neynar error:", errText);
-      throw new Error("Neynar signer failed");
+      const errorText = await neynarRes.text();
+      console.error("Neynar API Error:", errorText);
+      return NextResponse.json({ error: "Neynar signer creation failed. Check API key." }, { status: 500 });
     }
 
     const signer = await neynarRes.json();
@@ -28,8 +30,11 @@ export async function POST(request: NextRequest) {
       signer_uuid: signer.signer_uuid,
       approval_url: signer.signer_approval_url || signer.deep_link_url,
     });
+
   } catch (error: any) {
-    console.error("Create signer error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Signer route error:", error);
+    return NextResponse.json({ 
+      error: error.message || "Internal server error" 
+    }, { status: 500 });
   }
 }
