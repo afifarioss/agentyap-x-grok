@@ -1,36 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AgentYap v1.0
 
-## Getting Started
+**Grok-Powered Autonomous Farcaster Agent on Base**
 
-First, run the development server:
+Built by @afifarioss — Real talk. Real builds. Family First 💰
+
+## Overview
+
+AgentYap is a mobile-first autonomous Farcaster agent that enables Base builders and creators to generate context-aware casts using xAI Grok and publish them seamlessly via Neynar.
+
+It streamlines content creation for onchain builders while maintaining full user control through Farcaster signer flow and Privy authentication.
+
+**Live:** [https://agentyap-x-grok.vercel.app](https://agentyap-x-grok.vercel.app)
+
+## Key Features
+
+- Farcaster authentication via Auth Kit + Privy embedded wallets on Base
+- Intelligent vibe-based cast generation powered by Grok-beta
+- Multi-vibe support: Builder, Degen, Creator, Family Man
+- Secure Neynar v2 signer creation and one-click casting
+- Fully responsive, mobile-first UI optimized for phone builders
+- Base L2 native with embedded wallet support
+
+## Tech Stack
+
+- **Frontend**: Next.js 16 App Router + React 19 + TypeScript
+- **Authentication**: @farcaster/auth-kit + @privy-io/react-auth
+- **AI Layer**: xAI Grok-beta via official API
+- **Farcaster Integration**: Neynar v2 API (signer + cast endpoints)
+- **Blockchain**: Base (viem/chains)
+- **Styling**: Tailwind CSS v4
+- **Deployment**: Vercel
+
+## Architecture Highlights
+
+- Clean App Router structure with server-side API routes
+- Secure environment variable handling for API keys
+- Robust error handling and fallback mechanisms
+- Mobile-optimized UX for real-world Base creators
+
+## Quick Start
 
 ```bash
+git clone https://github.com/afifarioss/agentyap.git
+cd agentyap
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Environment Variables 
+NEXT_PUBLIC_PRIVY_APP_ID=pk_...
+GROK_API_KEY=xai-...
+NEYNAR_API_KEY=...
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+HOW IT WORKS
 
-## Learn More
+User signs in with Farcaster
 
-To learn more about Next.js, take a look at the following resources:
+1. Selects vibe + optional bio
+2. Grok generates personalized, high-quality cast
+3. User approves signer in Warpcast
+4. One-click publish to Farcaster
+5. Use Cases
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+USED CASES
 
-## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+. Daily content creation for Base builders
+. Hackathon rapid prototyping
+. Creator workflows in the Base ecosystem
+. Onchain community engagement
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+
+Built for the Base ecosystem.
+
+Open for collaborations, grants, and feedback.
+DM @afifarioss on X / Farcaster.
+License: MIT
