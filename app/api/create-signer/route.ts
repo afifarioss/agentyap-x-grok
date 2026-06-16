@@ -1,35 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { getSignedKey } from "@/utils/getSignedKey";
+import { NextResponse } from "next/server";
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
-    const { fid, username } = await request.json();
-
-    if (!fid || !username) {
-      return NextResponse.json({ error: "Missing fid or username" }, { status: 400 });
-    }
-
-    const neynarRes = await fetch("https://api.neynar.com/v2/farcaster/signer", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.NEYNAR_API_KEY!,
-      },
-    });
-
-    if (!neynarRes.ok) {
-      const errText = await neynarRes.text();
-      console.error("Neynar Error:", errText);
-      return NextResponse.json({ error: "Neynar signer failed. Check your NEYNAR_API_KEY" }, { status: 500 });
-    }
-
-    const signer = await neynarRes.json();
-
-    return NextResponse.json({
-      signer_uuid: signer.signer_uuid,
-      approval_url: signer.signer_approval_url || signer.deep_link_url,
-    });
+    const signedKey = await getSignedKey();
+    return NextResponse.json(signedKey, { status: 200 });
   } catch (error: any) {
-    console.error("Signer error:", error);
-    return NextResponse.json({ error: error.message || "Something went wrong" }, { status: 500 });
+    console.error("Signer creation error:", error);
+    return NextResponse.json(
+      { error: error.message || "Signer creation failed" },
+      { status: 500 }
+    );
   }
 }
