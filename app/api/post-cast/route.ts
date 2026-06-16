@@ -2,10 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { signerUuid, text } = await request.json();
+    if (!process.env.NEYNAR_API_KEY) {
+      return NextResponse.json({ error: "NEYNAR_API_KEY is missing" }, { status: 500 });
+    }
 
-    if (!signerUuid || !text) {
-      return NextResponse.json({ error: "Missing signerUuid or text" }, { status: 400 });
+    const body = await request.json();
+    const { signerUuid, text } = body;
+
+    // Input Validation
+    if (!signerUuid || typeof signerUuid !== 'string' || signerUuid.length < 10) {
+      return NextResponse.json({ error: "Invalid signerUuid" }, { status: 400 });
+    }
+    if (!text || typeof text !== 'string' || text.length < 1 || text.length > 280) {
+      return NextResponse.json({ error: "Invalid cast text (must be 1-280 chars)" }, { status: 400 });
     }
 
     const neynarRes = await fetch("https://api.neynar.com/v2/farcaster/cast", {
@@ -23,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     if (!neynarRes.ok) {
       const errText = await neynarRes.text();
-      console.error("Neynar post error:", errText);
+      console.error("Neynar Post Error:", neynarRes.status, errText);
       return NextResponse.json({ error: "Failed to post cast" }, { status: 500 });
     }
 
