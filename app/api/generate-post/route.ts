@@ -2,10 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { vibe, handle, bio } = await request.json();
+    if (!process.env.GROK_API_KEY) {
+      return NextResponse.json({ error: "GROK_API_KEY is missing" }, { status: 500 });
+    }
 
-    if (!vibe || !handle) {
-      return NextResponse.json({ error: "Missing vibe or handle" }, { status: 400 });
+    const body = await request.json();
+    const { vibe, handle, bio } = body;
+
+    // Input Validation
+    if (!vibe || typeof vibe !== 'string' || vibe.length > 50) {
+      return NextResponse.json({ error: "Invalid vibe" }, { status: 400 });
+    }
+    if (!handle || typeof handle !== 'string' || handle.length > 30 || !/^[a-zA-Z0-9_]+$/.test(handle)) {
+      return NextResponse.json({ error: "Invalid Farcaster handle" }, { status: 400 });
+    }
+    if (bio && (typeof bio !== 'string' || bio.length > 200)) {
+      return NextResponse.json({ error: "Bio too long" }, { status: 400 });
     }
 
     const grokRes = await fetch("https://api.x.ai/v1/chat/completions", {
