@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from "react";
@@ -149,7 +150,9 @@ export default function AgentYap() {
 
   async function connectFarcaster() {
     if (!isAuthenticated || !profile?.fid) {
-      setError("Sign in with Farcaster first — we need your FID to create a signer.");
+      setError(
+        "Sign in with Farcaster first — we need your FID to create a signer."
+      );
       return;
     }
 
@@ -232,7 +235,9 @@ export default function AgentYap() {
       setSamplePost(data.text);
     } catch (e: any) {
       if (latestVibeRef.current === vibeId) {
-        setSamplePost("⚠️ Could not load a sample right now — try tapping again.");
+        setSamplePost(
+          "⚠️ Could not load a sample right now — try tapping again."
+        );
       }
     } finally {
       if (latestVibeRef.current === vibeId) {
