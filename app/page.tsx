@@ -27,6 +27,12 @@ export default function AgentYap() {
   const [isPosting, setIsPosting] = useState(false);
   const [preview, setPreview] = useState("");
 
+  // 🔧 NEW — landing-page sample post, shown the moment a vibe is picked,
+  // before sign-in. This is the "show, don't tell" fix jesseXBT suggested.
+  const [samplePost, setSamplePost] = useState("");
+  const [isSampleLoading, setIsSampleLoading] = useState(false);
+  const sampleCacheRef = useRef<Record<string, string>>({});
+
   // 🔧 NEW
   const [error, setError] = useState<string | null>(null);
   const [signerStatus, setSignerStatus] = useState<"idle" | "pending" | "approved" | "timeout">("idle");
@@ -142,6 +148,38 @@ export default function AgentYap() {
     connectFarcaster();
   }
 
+  // 🔧 NEW — fires when someone taps a vibe card on the landing page,
+  // BEFORE sign-in. Calls a lightweight sample endpoint (no signer,
+  // no auth needed) so people see what they'd sound like immediately.
+  // Cached per-vibe so re-clicking the same vibe doesn't re-call Grok.
+  async function handleVibeSelect(vibeId: string) {
+    setVibe(vibeId);
+
+    if (sampleCacheRef.current[vibeId]) {
+      setSamplePost(sampleCacheRef.current[vibeId]);
+      return;
+    }
+
+    setIsSampleLoading(true);
+    setSamplePost("");
+    try {
+      const res = await fetch("/api/sample-post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vibe: vibeId, handle, bio }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || "Sample generation failed");
+      sampleCacheRef.current[vibeId] = data.text;
+      setSamplePost(data.text);
+    } catch (e: any) {
+      // Soft-fail on the landing page — don't block the flow with an
+      // error box over a nice-to-have preview.
+      setSamplePost("");
+    }
+    setIsSampleLoading(false);
+  }
+
   async function handlePreview() {
     if (!vibe) { setError("Pick a vibe above first."); return; }
     setError(null);
@@ -225,11 +263,28 @@ export default function AgentYap() {
 
             <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 12 }}>
               <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 8 }}>SELECT VIBE</div>
+              <div style={{ fontSize: 12, color: "#71717a", marginBottom: 10 }}>
+                Tap one to see a real sample of what AgentYap would post for you.
+              </div>
               {VIBES.map(v => (
-                <div key={v.id} onClick={() => setVibe(v.id)} style={{ padding: 12, background: vibe === v.id ? "#1f2937" : "#000", marginBottom: 8, borderRadius: 8, cursor: "pointer", border: vibe === v.id ? "1px solid #22c55e" : "none" }}>
+                <div key={v.id} onClick={() => handleVibeSelect(v.id)} style={{ padding: 12, background: vibe === v.id ? "#1f2937" : "#000", marginBottom: 8, borderRadius: 8, cursor: "pointer", border: vibe === v.id ? "1px solid #22c55e" : "none" }}>
                   {v.label} — {v.desc}
                 </div>
               ))}
+
+              {/* 🔧 NEW — the actual "show, don't tell" payoff */}
+              {vibe && (isSampleLoading || samplePost) && (
+                <div style={{ marginTop: 12, background: "#000", borderLeft: "3px solid #22c55e", padding: 14, borderRadius: 8 }}>
+                  <div style={{ fontSize: 11, color: "#22c55e", marginBottom: 6, letterSpacing: 0.5 }}>
+                    SAMPLE — THIS IS WHAT YOU'D POST
+                  </div>
+                  {isSampleLoading ? (
+                    <div style={{ color: "#71717a", fontSize: 14 }}>Writing a sample...</div>
+                  ) : (
+                    <div style={{ color: "#e0e0ff", fontSize: 14, whiteSpace: "pre-wrap" }}>{samplePost}</div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 20 }}>
