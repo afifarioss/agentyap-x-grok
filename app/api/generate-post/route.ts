@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from "next/server";
 
 const VIBE_PROMPTS: Record<string, string> = {
@@ -46,7 +47,7 @@ async function callGrok({
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "grok-beta",
+      model: process.env.GROK_MODEL || "grok-4.3",
       messages: [
         {
           role: "system",
@@ -129,8 +130,7 @@ export async function POST(req: NextRequest) {
         error: e.message || "Internal error",
       },
       {
-        status: e.message?.includes("missing GROK_API_KEY") ? 500 : 500,
+        status: 500,
       }
     );
   }
-}
