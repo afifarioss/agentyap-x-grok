@@ -4,106 +4,70 @@ import { useState, useEffect, useRef } from "react";
 import { SignInButton, useProfile } from '@farcaster/auth-kit';
 
 const VIBES = [
-  { id: "builder", label: "🔨 Builder", desc: "Ship stuff, talk tech on Base", successMsg: "🚀 Shipped to Farcaster." },
-  { id: "degen", label: "💎 Degen", desc: "Crypto alpha & market moves", successMsg: "🚀 Cast is live, anon." },
-  { id: "creator", label: "🎨 Creator", desc: "Content & community growth", successMsg: "🚀 Cast is live — keep creating." },
-  { id: "family", label: "👨‍👩‍👧 Family Man", desc: "Real talk, building for family", successMsg: "🚀 Cast is live — Family First 💰" },
+  { id: "builder", label: "🔨 Builder", desc: "Ship stuff, talk tech on Base" },
+  { id: "degen",   label: "💎 Degen",   desc: "Crypto alpha & market moves" },
+  { id: "creator", label: "🎨 Creator", desc: "Content & community growth" },
+  { id: "family",  label: "👨‍👩‍👧 Family Man", desc: "Real talk, building for family" },
 ];
 
-const MAX_POLL_ATTEMPTS = 45;
-const POLL_INTERVAL_MS = 8000;
-
-type Post = { text: string; time: string };
+const MAX_POLL_ATTEMPTS = 60;
+const POLL_INTERVAL_MS = 5000;
 
 export default function AgentYap() {
   const { isAuthenticated, profile } = useProfile();
-
   const [step, setStep] = useState<"setup" | "signer" | "dashboard">("setup");
+  const [handle, setHandle] = useState("afifarioss");
   const [vibe, setVibe] = useState<string | null>(null);
   const [bio, setBio] = useState("Dad from Ipoh building on Base for family 💰");
-  const [handle, setHandle] = useState("afifarioss");
-
-  const [samplePreview, setSamplePreview] = useState("");
-  const [preview, setPreview] = useState("");
-  const [posts, setPosts] = useState<Post[]>([]);
-
   const [signerUuid, setSignerUuid] = useState("");
-  const [approvalUrl, setApprovalUrl] = useState("");
-  const [signerStatus, setSignerStatus] = useState<"idle" | "creating" | "pending" | "approved" | "timeout">("idle");
-  const [pollSeconds, setPollSeconds] = useState(0);
-
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [signerApprovalUrl, setSignerApprovalUrl] = useState("");
+  const [posts, setPosts] = useState<any[]>([]);
   const [isPosting, setIsPosting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-  const [stickyError, setStickyError] = useState<string | null>(null);
+  const [preview, setPreview] = useState("");
 
+  // 🔧 NEW
+  const [error, setError] = useState<string | null>(null);
+  const [signerStatus, setSignerStatus] = useState<"idle" | "pending" | "approved" | "timeout">("idle");
+  const [pollSeconds, setPollSeconds] = useState(0);
   const pollAttemptsRef = useRef(0);
   const autoConnectFiredRef = useRef(false);
 
-  // Persist vibe & bio across refresh
+  // 🔧 NEW — auto-clear error after 6s
   useEffect(() => {
-    const savedVibe = localStorage.getItem('agentyap_vibe');
-    const savedBio = localStorage.getItem('agentyap_bio');
-    if (savedVibe) setVibe(savedVibe);
-    if (savedBio) setBio(savedBio);
-  }, []);
+    if (!error) return;
+    const t = setTimeout(() => setError(null), 6000);
+    return () => clearTimeout(t);
+  }, [error]);
 
+  // 🔧 FIX — one-click: auto-connect the moment auth succeeds, no second button
   useEffect(() => {
-    if (vibe) localStorage.setItem('agentyap_vibe', vibe);
-    localStorage.setItem('agentyap_bio', bio);
-  }, [vibe, bio]);
-
-  // Auto-clear feedback
-  useEffect(() => { if (error) { const t = setTimeout(() => setError(null), 6500); return () => clearTimeout(t); } }, [error]);
-  useEffect(() => { if (toast) { const t = setTimeout(() => setToast(null), 4500); return () => clearTimeout(t); } }, [toast]);
-
-  // Live sample preview
-  useEffect(() => {
-    if (!vibe) return;
-    const demos: Record<string, string> = {
-      builder: "Just shipped v1.4 AgentYap with better error handling & retry. Base builders rise! 💰 #Base",
-      degen: "Alpha: $TRDTALK pumping on Base. Degen season — stack for family bags. DYOR",
-      creator: "New thread dropping: From Ipoh dad struggle to onchain creator. Join the journey!",
-      family: "Real talk: Grinding on Base for Danish, Darissa, Damia & @wawazeqk. Family First 💰",
-    };
-    setSamplePreview(demos[vibe] || "Sample cast loading...");
-  }, [vibe]);
-
-  // Auto signer after SIWF
-  useEffect(() => {
-    if (isAuthenticated && profile?.fid && step === "setup" && !autoConnectFiredRef.current) {
+    if (isAuthenticated && profile?.fid && !autoConnectFiredRef.current && step === "setup") {
       autoConnectFiredRef.current = true;
       connectFarcaster();
     }
   }, [isAuthenticated, profile?.fid, step]);
 
-  // Polling with progress
+  // 🔧 FIX — real polling instead of an honor-system "I Approved" button
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
     if (step === "signer" && signerStatus === "pending" && signerUuid) {
       pollAttemptsRef.current = 0;
       setPollSeconds(0);
       interval = setInterval(async () => {
         pollAttemptsRef.current += 1;
-        const secs = pollAttemptsRef.current * (POLL_INTERVAL_MS / 1000);
-        setPollSeconds(secs);
-
+        setPollSeconds(pollAttemptsRef.current * (POLL_INTERVAL_MS / 1000));
         if (pollAttemptsRef.current >= MAX_POLL_ATTEMPTS) {
-          clearInterval(interval!);
+          if (interval) clearInterval(interval);
           setSignerStatus("timeout");
-          setError("Approval timeout. Tap Retry below.");
           return;
         }
-
         try {
           const res = await fetch(`/api/check-signer?signerUuid=${signerUuid}`);
           const data = await res.json();
           if (data.approved === true) {
-            clearInterval(interval!);
             setSignerStatus("approved");
             setStep("dashboard");
-            setToast("Signer approved! Ready to post.");
+            if (interval) clearInterval(interval);
           }
         } catch (e) {
           console.error("Polling error:", e);
@@ -114,14 +78,12 @@ export default function AgentYap() {
   }, [step, signerStatus, signerUuid]);
 
   async function connectFarcaster() {
-    setError(null);
-    setStickyError(null);
+    // 🔧 FIX — no hardcoded fallback FID. Hard stop instead.
     if (!isAuthenticated || !profile?.fid) {
-      setStickyError("Sign in with Farcaster first (button at the top).");
+      setError("Sign in with Farcaster first — we need your FID to create a signer.");
       return;
     }
-
-    setSignerStatus("creating");
+    setError(null);
     try {
       const res = await fetch("/api/create-signer", {
         method: "POST",
@@ -129,19 +91,28 @@ export default function AgentYap() {
         body: JSON.stringify({ fid: profile.fid, username: profile.username || handle }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create signer");
+      if (!res.ok) throw new Error(data.error || "Could not create signer");
       setSignerUuid(data.signer_uuid);
-      setApprovalUrl(data.approval_url);
+      setSignerApprovalUrl(data.approval_url);
       setSignerStatus("pending");
       setStep("signer");
     } catch (e: any) {
-      setError(e.message || "Signer creation failed. Check your NEYNAR_API_KEY.");
-      setSignerStatus("idle");
+      setError(e.message || "Something went wrong creating your signer.");
+      autoConnectFiredRef.current = false; // allow retry
     }
   }
 
-  async function generateCastText(): Promise<string> {
-    setIsGenerating(true);
+  function retryConnect() {
+    setSignerStatus("idle");
+    setSignerApprovalUrl("");
+    setSignerUuid("");
+    autoConnectFiredRef.current = false;
+    setStep("setup");
+    connectFarcaster();
+  }
+
+  async function handlePreview() {
+    if (!vibe) { setError("Pick a vibe above first."); return; }
     setError(null);
     try {
       const res = await fetch("/api/generate-post", {
@@ -151,156 +122,133 @@ export default function AgentYap() {
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || "Generation failed");
-      return data.text;
+      setPreview(data.text);
     } catch (e: any) {
-      setError("Grok API issue — using fallback.");
-      return `Fallback: ${vibe} mode. Ipoh Dad building on Base for family 💰 #Base`;
-    } finally {
-      setIsGenerating(false);
+      setError(e.message || "Couldn't generate preview.");
     }
   }
 
-  async function handlePreview() {
-    if (!vibe) { setError("Pilih vibe dulu bro!"); return; }
-    const text = await generateCastText();
-    setPreview(text);
-  }
-
   const handlePost = async () => {
-    if (!vibe || !signerUuid) { setError("Vibe & signer required."); return; }
-    setIsPosting(true);
+    if (!signerUuid) { setError("Signer not ready — reconnect Farcaster."); return; }
     setError(null);
+    setIsPosting(true);
     try {
-      const text = preview || (await generateCastText());
-      const res = await fetch("/api/post-cast", {
+      let text = preview;
+      if (!text) {
+        const genRes = await fetch("/api/generate-post", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ vibe, handle: profile?.username || handle, bio }),
+        });
+        const genData = await genRes.json();
+        if (genData.error) throw new Error(genData.error);
+        text = genData.text;
+      }
+      const postRes = await fetch("/api/post-cast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ signerUuid, text }),
       });
-      const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error || "Post failed");
-
-      setPosts(prev => [{ text, time: new Date().toLocaleTimeString() }, ...prev]);
+      const postData = await postRes.json();
+      if (!postRes.ok || postData.error) throw new Error(postData.error || "Post failed");
+      setPosts(p => [{ text, time: new Date().toLocaleTimeString() }, ...p]);
       setPreview("");
-      const vibeConfig = VIBES.find(v => v.id === vibe);
-      setToast(vibeConfig?.successMsg || "🚀 Posted on Farcaster!");
     } catch (e: any) {
-      setError(e.message || "Posting failed — check signer.");
-    } finally {
-      setIsPosting(false);
+      setError(e.message || "Couldn't post that cast.");
     }
-  };
-
-  // ✅ FIXED & FULL retryConnect
-  const retryConnect = () => {
-    setSignerStatus("idle");
-    setApprovalUrl("");
-    setSignerUuid("");
-    setError(null);
-    setPollSeconds(0);
-    setStickyError(null);
-    // Re-trigger creation
-    connectFarcaster();
+    setIsPosting(false);
   };
 
   return (
     <div style={{ minHeight: "100vh", background: "#050510", color: "#e0e0ff", padding: 20, fontFamily: "monospace" }}>
       <div style={{ maxWidth: 560, margin: "0 auto" }}>
-        <div style={{ marginBottom: 32 }}>
-          <div style={{ fontSize: 28, fontWeight: "bold" }}>AGENTYAP v1.4</div>
-          <div style={{ color: "#22c55e" }}>GROK + NEYNAR • Ipoh Dad on Base</div>
-          <p style={{ color: "#a1a1aa" }}>Vibe → Sample → Connect → Post. Family First 💰</p>
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 26, fontWeight: "bold" }}>AGENTYAP v1.0</div>
+          <div style={{ color: "#22c55e", fontSize: 13 }}>GROK + NEYNAR • Ipoh Dad 👨‍👩‍👧</div>
         </div>
 
-        {stickyError && <div style={{ background: "#1a0e10", border: "2px solid #ef4444", color: "#fca5a5", padding: 16, borderRadius: 8, marginBottom: 16 }}>{stickyError}</div>}
-        {error && <div style={{ background: "#1a0e10", border: "1px solid #ef4444", color: "#fca5a5", padding: 16, borderRadius: 8, marginBottom: 16 }}>{error}</div>}
-        {toast && <div style={{ background: "#0e1a12", border: "1px solid #22c55e", color: "#86efac", padding: 16, borderRadius: 8, marginBottom: 16 }}>{toast}</div>}
-
-        {/* Live Sample */}
-        <div style={{ background: "#111", padding: 20, borderRadius: 12, marginBottom: 24, border: "2px solid #22c55e" }}>
-          <div style={{ fontSize: 13, color: "#6366f1" }}>LIVE SAMPLE PREVIEW</div>
-          <div style={{ background: "#000", padding: 16, borderRadius: 8, whiteSpace: "pre-wrap", minHeight: 110 }}>
-            {samplePreview || "Pilih vibe untuk preview..."}
+        {/* 🔧 NEW — inline error replaces alert() everywhere */}
+        {error && (
+          <div style={{ background: "#1a0e10", border: "1px solid #ef4444", color: "#fca5a5", padding: "12px 16px", borderRadius: 8, marginBottom: 16, fontSize: 14 }}>
+            {error}
           </div>
-        </div>
+        )}
 
-        {/* Vibe Selection */}
-        <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 24 }}>
-          {VIBES.map((v) => (
-            <div key={v.id} onClick={() => setVibe(v.id)} style={{
-              padding: 14, background: vibe === v.id ? "#1f2937" : "#000", marginBottom: 8,
-              borderRadius: 8, cursor: "pointer", border: vibe === v.id ? "2px solid #22c55e" : "1px solid #333",
-              transition: "all 0.2s ease", transform: vibe === v.id ? "scale(1.02)" : "scale(1)"
-            }}
-            onMouseEnter={e => { if (vibe !== v.id) e.currentTarget.style.transform = 'scale(1.01)'; }}
-            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-            >
-              {v.label} — {v.desc}
-            </div>
-          ))}
-        </div>
-
-        {/* Setup */}
         {step === "setup" && (
           <>
-            <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 16 }}>
-              <div style={{ fontSize: 12, color: "#888", marginBottom: 8 }}>BIO (optional)</div>
-              <textarea value={bio} onChange={e => setBio(e.target.value)} style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8, minHeight: 80 }} placeholder="Ipoh Dad building on Base..." />
+            <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 12 }}>
+              <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 6 }}>FARCASTER HANDLE</div>
+              <input value={handle} onChange={e => setHandle(e.target.value.replace("@", ""))} style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8 }} />
             </div>
-            {!isAuthenticated ? <SignInButton /> : (
-              <button onClick={connectFarcaster} disabled={signerStatus === "creating"} style={{ width: "100%", background: "#22c55e", color: "#000", padding: "16px", borderRadius: 12, fontWeight: "bold" }}>
-                {signerStatus === "creating" ? "Creating Signer..." : "🚀 Connect & Get Signer"}
-              </button>
+
+            <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 12 }}>
+              <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 8 }}>SELECT VIBE</div>
+              {VIBES.map(v => (
+                <div key={v.id} onClick={() => setVibe(v.id)} style={{ padding: 12, background: vibe === v.id ? "#1f2937" : "#000", marginBottom: 8, borderRadius: 8, cursor: "pointer", border: vibe === v.id ? "1px solid #22c55e" : "none" }}>
+                  {v.label} — {v.desc}
+                </div>
+              ))}
+            </div>
+
+            <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 20 }}>
+              <div style={{ fontSize: 12, color: "#888", marginBottom: 6 }}>BIO (optional)</div>
+              <textarea value={bio} onChange={e => setBio(e.target.value)} style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8, minHeight: 80 }} />
+            </div>
+
+            {/* 🔧 FIX — sign-in is the ONLY action now. No second "Connect" button. */}
+            {!isAuthenticated ? (
+              <>
+                <SignInButton />
+                <div style={{ fontSize: 12, color: "#71717a", marginTop: 10, textAlign: "center" }}>
+                  Signing in automatically sets up your signer — no extra steps.
+                </div>
+              </>
+            ) : (
+              <div style={{ textAlign: "center", color: "#22c55e", padding: 12 }}>
+                Setting up your signer...
+              </div>
             )}
           </>
         )}
 
-        {/* Signer Step with timer */}
         {step === "signer" && (
           <div style={{ textAlign: "center", padding: 30 }}>
-            <div style={{ fontSize: 20, marginBottom: 16 }}>Approve Signer in Warpcast</div>
-            {approvalUrl && (
-              <a href={approvalUrl} target="_blank" rel="noreferrer" style={{ display: "block", background: "#6366f1", color: "#fff", padding: 18, borderRadius: 12, margin: "20px 0", textDecoration: "none", fontWeight: "bold" }}>
-                OPEN WARPCAST →
-              </a>
+            <div style={{ fontSize: 20, marginBottom: 16 }}>Almost there — approve your signer</div>
+
+            {signerStatus === "pending" && (
+              <div>
+                <a href={signerApprovalUrl} target="_blank" rel="noreferrer" style={{ display: "block", background: "#6366f1", color: "#fff", padding: 16, borderRadius: 12, margin: "20px 0", textDecoration: "none", fontWeight: "bold" }}>
+                  Approve AgentYap in Warpcast →
+                </a>
+                <p style={{ fontSize: 14, color: "#22c55e" }}>Waiting for approval... {pollSeconds}s</p>
+                <p style={{ fontSize: 13, color: "#666" }}>This page updates automatically once you approve.</p>
+              </div>
             )}
-            <div style={{ color: "#22c55e", marginBottom: 8 }}>Waiting... {pollSeconds}s</div>
-            <div style={{ height: 8, background: "#333", borderRadius: 4, overflow: "hidden" }}>
-              <div style={{ width: `${Math.min((pollSeconds / (MAX_POLL_ATTEMPTS * POLL_INTERVAL_MS / 1000)) * 100, 100)}%`, height: "100%", background: "#22c55e", transition: "width 0.4s ease" }} />
-            </div>
+
             {signerStatus === "timeout" && (
-              <button onClick={retryConnect} style={{ marginTop: 20, background: "#f59e0b", color: "#000", padding: "14px 32px", borderRadius: 8, fontWeight: "bold" }}>
-                Retry Connect
-              </button>
+              <div>
+                <p style={{ color: "#f59e0b", fontSize: 16, marginBottom: 16 }}>No problem — just tap below when you're ready.</p>
+                <button onClick={retryConnect} style={{ background: "#6366f1", color: "#fff", padding: "14px 24px", borderRadius: 10, fontWeight: "bold", border: "none", cursor: "pointer" }}>
+                  Try Again
+                </button>
+              </div>
             )}
           </div>
         )}
 
-        {/* Dashboard */}
         {step === "dashboard" && (
           <div>
-            <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-              <button onClick={handlePreview} disabled={!vibe || isGenerating} style={{ flex: 1, padding: 14, background: "#333", borderRadius: 8 }}>
-                {isGenerating ? "Generating..." : "Generate Preview"}
-              </button>
-              <button onClick={handlePost} disabled={!vibe || isPosting || !signerUuid} style={{ flex: 1, padding: 14, background: isPosting ? "#444" : "#22c55e", color: isPosting ? "#888" : "#000", borderRadius: 8 }}>
-                {isPosting ? "Posting..." : "🚀 POST TO FARCASTER"}
-              </button>
-            </div>
-
-            {preview && (
-              <div style={{ background: "#111", padding: 20, borderRadius: 12, border: "3px solid #22c55e", marginBottom: 20 }}>
-                <div style={{ color: "#22c55e", fontWeight: "bold" }}>PREVIEW ONLY (safe)</div>
-                <div style={{ whiteSpace: "pre-wrap", marginTop: 12 }}>{preview}</div>
-              </div>
-            )}
-
+            <button onClick={handlePreview} style={{ background: "#333", color: "#fff", padding: 12, marginRight: 8, borderRadius: 8, border: "none" }}>Preview</button>
+            <button onClick={handlePost} disabled={isPosting} style={{ background: isPosting ? "#444" : "#22c55e", color: "#000", padding: 12, borderRadius: 8, border: "none", fontWeight: "bold" }}>
+              {isPosting ? "Posting..." : "POST NOW"}
+            </button>
+            {preview && <div style={{ background: "#111", padding: 14, marginTop: 12, borderRadius: 8, whiteSpace: "pre-wrap" }}>{preview}</div>}
             {posts.length > 0 && (
-              <div>
-                <div style={{ fontSize: 13, color: "#6366f1", marginBottom: 8 }}>RECENT CASTS</div>
+              <div style={{ marginTop: 24 }}>
+                <div style={{ fontSize: 13, color: "#888", marginBottom: 8 }}>Recent Casts</div>
                 {posts.map((p, i) => (
-                  <div key={i} style={{ background: "#111", padding: 12, borderRadius: 8, marginBottom: 8, whiteSpace: "pre-wrap" }}>
-                    {p.text} <span style={{ color: "#666" }}>({p.time})</span>
+                  <div key={i} style={{ background: "#111", padding: 12, borderRadius: 8, marginBottom: 8 }}>
+                    <div>{p.text}</div>
+                    <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>{p.time}</div>
                   </div>
                 ))}
               </div>
