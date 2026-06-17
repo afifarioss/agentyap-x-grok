@@ -4,11 +4,8 @@ import { ensureAgentYapMarker } from "@/lib/ensure-agent-marker";
 
 /**
  * POST /api/agent-yap
- * Body: { context?: string }   // optional extra context (e.g. "just shipped the new persona")
- * Returns: { text: string }    // always starts with 🟦
- *
- * Clean dedicated endpoint for AgentYap's own voice.
- * Use this when you want to post as the agent (manual for now).
+ * Body: { context?: string }
+ * Returns: { text: string }
  */
 export async function POST(req: NextRequest) {
   try {
@@ -55,10 +52,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Grok returned empty" }, { status: 502 });
     }
 
-    // Always enforce 🟦 + trim (this was the bug Jesse caught)
     text = ensureAgentYapMarker(text);
 
-    // Safety trim for Farcaster limit
     const finalText = text.length > 320 ? text.slice(0, 317) + "..." : text;
 
     return NextResponse.json({ text: finalText });
