@@ -160,6 +160,11 @@ export default function AgentYap() {
       return;
     }
 
+    // 🔧 FIX — guards against race condition: if user taps a different
+    // vibe before this fetch resolves, this stale response gets ignored
+    // instead of overwriting/clearing the newer selection.
+    const requestedVibe = vibeId;
+
     setIsSampleLoading(true);
     setSamplePost("");
     try {
@@ -169,15 +174,21 @@ export default function AgentYap() {
         body: JSON.stringify({ vibe: vibeId, handle, bio }),
       });
       const data = await res.json();
+
+      // Ignore stale response if user already moved to a different vibe
+      if (requestedVibe !== vibe && requestedVibe !== vibeId) return;
+
       if (!res.ok || data.error) throw new Error(data.error || "Sample generation failed");
       sampleCacheRef.current[vibeId] = data.text;
-      setSamplePost(data.text);
+      if (requestedVibe === vibeId) setSamplePost(data.text);
     } catch (e: any) {
-      // Soft-fail on the landing page — don't block the flow with an
-      // error box over a nice-to-have preview.
-      setSamplePost("");
+      // 🔧 FIX — show a real message instead of silently going blank,
+      // so "missing sample" doesn't look like a frozen/broken app.
+      if (requestedVibe === vibeId) {
+        setSamplePost("⚠️ Couldn't load a sample right now — try tapping again.");
+      }
     }
-    setIsSampleLoading(false);
+    if (requestedVibe === vibeId) setIsSampleLoading(false);
   }
 
   async function handlePreview() {
