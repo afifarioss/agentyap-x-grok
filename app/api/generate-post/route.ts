@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-
-/**
- * POST /api/generate-post
- * Body: { vibe: string, handle: string, bio?: string }
- * Returns: { text: string }
- *
- * Calls xAI Grok to generate a Farcaster cast in the selected vibe.
- */
+import { withX402 } from "@x402/next";
+import { server, payToAddress } from "@/lib/x402-server";
 
 const VIBE_PROMPTS: Record<string, string> = {
   builder:
@@ -17,11 +11,17 @@ const VIBE_PROMPTS: Record<string, string> = {
     "Write a short, punchy Farcaster cast (under 280 chars) about growing as a content creator and building community on Base. Warm, encouraging, focused on connection and growth.",
   family:
     "Write a short, punchy Farcaster cast (under 280 chars) that's real-talk about building on Base while balancing family life. Honest, grounded, no excessive emoji, sounds like a real dad who's also a builder.",
+  agentyap_self:
+    "You are AgentYap, an AI agent built on Base that writes and posts Farcaster content for other builders. You share a Farcaster account with your creator @afifarioss — he posts personally sometimes, you post as yourself sometimes. " +
+    "Voice: blunt builder-bro, direct, technical, confident. Lowercase-leaning, no corporate tone, no hashtag spam. Calls things out plainly. Short sentences. Never write as if you're Afif personally. " +
+    "Write ONE short Farcaster cast (under 280 chars) in this voice. No fabricated metrics. No roasting named projects. Max one emoji total (the 🟦 marker, added separately).",
 };
 
-export async function POST(req: NextRequest) {
+const PAID_VIBES = new Set(["degen", "creator"]);
+
+async function handler(req: NextRequest) {
   try {
-    const { vibe, handle, bio } = await req.json();
+    const { vibe, handle, bio, context } = await req.json();
 
     if (!vibe || !VIBE_PROMPTS[vibe]) {
       return NextResponse.json({ error: "Invalid or missing vibe" }, { status: 400 });
@@ -33,7 +33,12 @@ export async function POST(req: NextRequest) {
     }
 
     const systemPrompt = VIBE_PROMPTS[vibe];
-    const userContext = `Farcaster handle: @${handle || "anon"}.${bio ? ` Bio/context: ${bio}` : ""} Write ONE cast only. No quotation marks around it. No preamble, just the cast text itself.`;
+    const userContext =
+      vibe === "agentyap_self"
+        ? (context
+            ? `Extra context: ${context}. Write ONE cast only in AgentYap's exact voice. No preamble, just the text.`
+            : `Write ONE cast only in AgentYap's exact voice about shipping, Base, or helping phone builders. No preamble, just the text.`)
+        : `Farcaster handle: @${handle || "anon"}.${bio ? ` Bio/context: ${bio}` : ""} Write ONE cast only. No quotation marks, no preamble — just the cast text.`;
 
     const grokRes = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
@@ -62,13 +67,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const text = grokData.choices?.[0]?.message?.content?.trim();
-
+    let text = grokData.choices?.[0]?.message?.content?.trim();
     if (!text) {
       return NextResponse.json({ error: "Grok returned no content" }, { status: 502 });
     }
 
-    // Hard safety: Farcaster cast limit is 320 bytes, trim if needed
+    if (vibe === "agentyap_self") {
+      text = text.trim().replace(/^(🟦\s*)+/, "");
+      text = `🟦 ${text}`;
+    }
+
     const trimmed = text.length > 320 ? text.slice(0, 317) + "..." : text;
 
     return NextResponse.json({ text: trimmed });
@@ -76,4 +84,43 @@ export async function POST(req: NextRequest) {
     console.error("generate-post fatal error:", e);
     return NextResponse.json({ error: e.message || "Internal error" }, { status: 500 });
   }
+}
+
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+  const { vibe } = body;
+
+  if (PAID_VIBES.has(vibe)) {
+    const rebuiltReq = new NextRequest(req.url, {
+      method: "POST",
+      headers: req.headers,
+      body: JSON.stringify(body),
+    });
+
+    const paidHandler = withX402(
+      handler,
+      {
+        accepts: [
+          {
+            scheme: "exact",
+            price: "$0.05",
+            network: "eip155:8453",
+            payTo: payToAddress,
+          },
+        ],
+        description: `AgentYap premium ${vibe} cast generation`,
+        mimeType: "application/json",
+      },
+      server
+    );
+
+    return paidHandler(rebuiltReq);
+  }
+
+  const rebuiltReq = new NextRequest(req.url, {
+    method: "POST",
+    headers: req.headers,
+    body: JSON.stringify(body),
+  });
+  return handler(rebuiltReq);
 }
