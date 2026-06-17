@@ -12,6 +12,8 @@ const VIBES = [
 
 const MAX_POLL_ATTEMPTS = 60;
 const POLL_INTERVAL_MS = 5000;
+const BACKOFF_AFTER_ATTEMPTS = 6; // after ~30s of no response, slow down
+const BACKOFF_INTERVAL_MS = 10000; // step up to 10s between polls
 
 export default function AgentYap() {
   const { isAuthenticated, profile } = useProfile();
@@ -48,33 +50,62 @@ export default function AgentYap() {
   }, [isAuthenticated, profile?.fid, step]);
 
   // 🔧 FIX — real polling instead of an honor-system "I Approved" button
+  // 🔧 NEW — backs off to a slower interval after BACKOFF_AFTER_ATTEMPTS
+  // failed checks, so we're not hammering /api/check-signer the whole
+  // time someone takes a while in Warpcast (jesseXBT's suggestion).
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+
     if (step === "signer" && signerStatus === "pending" && signerUuid) {
       pollAttemptsRef.current = 0;
       setPollSeconds(0);
-      interval = setInterval(async () => {
+
+      const elapsedMsRef = { current: 0 };
+
+      const poll = async () => {
+        if (cancelled) return;
         pollAttemptsRef.current += 1;
-        setPollSeconds(pollAttemptsRef.current * (POLL_INTERVAL_MS / 1000));
+        elapsedMsRef.current +=
+          pollAttemptsRef.current <= BACKOFF_AFTER_ATTEMPTS
+            ? POLL_INTERVAL_MS
+            : BACKOFF_INTERVAL_MS;
+        setPollSeconds(Math.round(elapsedMsRef.current / 1000));
+
         if (pollAttemptsRef.current >= MAX_POLL_ATTEMPTS) {
-          if (interval) clearInterval(interval);
           setSignerStatus("timeout");
           return;
         }
+
         try {
           const res = await fetch(`/api/check-signer?signerUuid=${signerUuid}`);
           const data = await res.json();
           if (data.approved === true) {
             setSignerStatus("approved");
             setStep("dashboard");
-            if (interval) clearInterval(interval);
+            return; // stop polling, don't schedule next
           }
         } catch (e) {
           console.error("Polling error:", e);
+          // transient network error — don't kill the loop, just keep going
         }
-      }, POLL_INTERVAL_MS);
+
+        if (cancelled) return;
+        // 🔧 step up the interval after BACKOFF_AFTER_ATTEMPTS attempts
+        const nextDelay =
+          pollAttemptsRef.current < BACKOFF_AFTER_ATTEMPTS
+            ? POLL_INTERVAL_MS
+            : BACKOFF_INTERVAL_MS;
+        timeoutId = setTimeout(poll, nextDelay);
+      };
+
+      timeoutId = setTimeout(poll, POLL_INTERVAL_MS);
     }
-    return () => { if (interval) clearInterval(interval); };
+
+    return () => {
+      cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [step, signerStatus, signerUuid]);
 
   async function connectFarcaster() {
@@ -175,6 +206,18 @@ export default function AgentYap() {
 
         {step === "setup" && (
           <>
+            {/* 🔧 NEW — jesseXBT's #1 flag: explain what the app does before
+                asking anyone to sign in or pick anything. */}
+            <div style={{ background: "#111", padding: 20, borderRadius: 12, marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: "#6366f1", marginBottom: 8 }}>WHAT YOU GET</div>
+              <ul style={{ color: "#a1a1aa", lineHeight: 1.7, paddingLeft: 20, margin: 0 }}>
+                <li>AI writes Farcaster casts in your chosen vibe — Builder, Degen, Creator, or Family Man</li>
+                <li>Your own signer — AgentYap posts as you, never holds your keys</li>
+                <li>One tap approval in Warpcast, then post anytime</li>
+                <li>Stay visible on Farcaster without spending hours writing casts</li>
+              </ul>
+            </div>
+
             <div style={{ background: "#111", padding: 16, borderRadius: 12, marginBottom: 12 }}>
               <div style={{ fontSize: 12, color: "#6366f1", marginBottom: 6 }}>FARCASTER HANDLE</div>
               <input value={handle} onChange={e => setHandle(e.target.value.replace("@", ""))} style={{ width: "100%", background: "#000", color: "#fff", padding: 12, borderRadius: 8 }} />
@@ -219,8 +262,8 @@ export default function AgentYap() {
                 <a href={signerApprovalUrl} target="_blank" rel="noreferrer" style={{ display: "block", background: "#6366f1", color: "#fff", padding: 16, borderRadius: 12, margin: "20px 0", textDecoration: "none", fontWeight: "bold" }}>
                   Approve AgentYap in Warpcast →
                 </a>
-                <p style={{ fontSize: 14, color: "#22c55e" }}>Waiting for approval... {pollSeconds}s</p>
-                <p style={{ fontSize: 13, color: "#666" }}>This page updates automatically once you approve.</p>
+                <p style={{ fontSize: 14, color: "#22c55e" }}>Waiting for approval in Warpcast... {pollSeconds}s</p>
+                <p style={{ fontSize: 13, color: "#666" }}>This page updates automatically once you approve — no need to come back and check.</p>
               </div>
             )}
 
