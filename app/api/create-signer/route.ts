@@ -1,13 +1,13 @@
-import { getSignedKey } from "@/utils/getSignedKey";
+import { getcreate-signer} from "@/utils/getcreate-signer";
 import { NextResponse } from "next/server";
 
 export async function POST() {
   try {
-    const signedKey = await getSignedKey();
+    const create-signer = await getcreate-signer();
     return NextResponse.json(
       {
-        signer_uuid: signedKey.signer_uuid,
-        approval_url: signedKey.signer_approval_url,
+        signer_uuid: create-signer-uuid,
+        approval_url: create-signer_approval_url,
       },
       { status: 200 }
     );
