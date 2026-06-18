@@ -18,10 +18,7 @@
     "@farcaster/hub-nodejs": "^0.11.0",
     "@neynar/nodejs-sdk": "^2.0.0",
     "@privy-io/react-auth": "^2.0.0",
-    "viem": "^2.21.0",
-    "@x402/next": "latest",
-    "@x402/core": "latest",
-    "@x402/evm": "latest"
+    "viem": "^2.21.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
