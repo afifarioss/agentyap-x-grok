@@ -38,8 +38,8 @@ const SIGNER_WAIT_MESSAGES = [
 const PROMPT_IDEAS = [
   "I shipped a small update today and want to share it.",
   "I fixed a bug that was blocking my app.",
-  "I’m learning how Farcaster signers work.",
-  "I’m building AgentYap in public as a dad of 3.",
+  "I'm learning how Farcaster signers work.",
+  "I'm building AgentYap in public as a dad of 3.",
 ];
 
 const MAX_POLL_ATTEMPTS = 60;
@@ -50,8 +50,25 @@ const BACKOFF_INTERVAL_MS = 10000;
 type Step = "setup" | "signer" | "dashboard";
 type SignerStatus = "idle" | "pending" | "approved" | "timeout";
 
+// 🔧 FIX — added stable `id` field. Previously posts only had
+// { text, time }, which forced the Recent Casts list to use array
+// index as the React key. Once Delete was added, that became a real
+// bug risk: deleting a post shifts every index after it, so React can
+// misattribute state to the wrong card, and a fast double-click could
+// delete the wrong post. Every post now gets a real unique id at
+// creation time, and both the React key and the delete handler use
+// that id instead of position.
+type Post = { id: string; text: string; time: string };
+
 function track(event: string, data?: Record<string, any>) {
   console.log("[AgentYap event]", event, data || {});
+}
+
+function makePostId(): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 export default function AgentYap() {
@@ -67,7 +84,7 @@ export default function AgentYap() {
   const [signerUuid, setSignerUuid] = useState("");
   const [signerApprovalUrl, setSignerApprovalUrl] = useState("");
 
-  const [posts, setPosts] = useState<{ text: string; time: string }[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [isPosting, setIsPosting] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [preview, setPreview] = useState("");
@@ -78,6 +95,11 @@ export default function AgentYap() {
   const latestVibeRef = useRef<string | null>(null);
 
   const [error, setError] = useState<string | null>(null);
+
+  // 🔧 NEW — toast state, used by the Copy buttons in Recent Casts to
+  // give feedback ("Copied (text only)" / "Copied (with attribution)")
+  const [toast, setToast] = useState<string | null>(null);
+
   const [signerStatus, setSignerStatus] = useState<SignerStatus>("idle");
   const [pollSeconds, setPollSeconds] = useState(0);
 
@@ -112,6 +134,14 @@ export default function AgentYap() {
     const timeout = setTimeout(() => setError(null), 8000);
     return () => clearTimeout(timeout);
   }, [error]);
+
+  // 🔧 NEW — auto-clear toast after 4s, same pattern as error clearing
+  useEffect(() => {
+    if (!toast) return;
+
+    const timeout = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(timeout);
+  }, [toast]);
 
   useEffect(() => {
     if (
@@ -452,8 +482,11 @@ export default function AgentYap() {
         throw new Error(postData.error || "Post failed");
       }
 
+      // 🔧 FIX — every new post now gets a real stable id via
+      // makePostId(), not just { text, time }
       setPosts((currentPosts) => [
         {
+          id: makePostId(),
           text,
           time: new Date().toLocaleTimeString(),
         },
@@ -589,6 +622,23 @@ export default function AgentYap() {
             }}
           >
             {error}
+          </div>
+        )}
+
+        {/* 🔧 NEW — toast display, used by Recent Casts copy buttons */}
+        {toast && (
+          <div
+            style={{
+              background: "#0e1a12",
+              border: "1px solid #22c55e",
+              color: "#86efac",
+              padding: "12px 16px",
+              borderRadius: 10,
+              marginBottom: 16,
+              fontSize: 14,
+            }}
+          >
+            {toast}
           </div>
         )}
 
@@ -838,7 +888,7 @@ export default function AgentYap() {
               <textarea
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                placeholder="Example: I’m building an AI tool for Farcaster creators."
+                placeholder="Example: I'm building an AI tool for Farcaster creators."
                 style={{
                   width: "100%",
                   boxSizing: "border-box",
@@ -1313,29 +1363,146 @@ export default function AgentYap() {
               </section>
             )}
 
-            {posts.length > 0 && (
-              <section style={{ marginTop: 24 }}>
+            {/* 🔧 UPDATED — Recent Casts section, addressing jesseXBT's
+                feedback across multiple rounds:
+                1. Numbered badge per post (batch distinguishability)
+                2. borderTop added so consecutive cards feel separated
+                3. Per-post Copy (strips marker) + Copy+🟦 (keeps
+                   attribution, only shown if the post actually has the
+                   marker) + Delete actions
+                4. Empty state instead of rendering nothing
+                5. Delete + React key now use stable post.id, not array
+                   index — fixes the real bug risk index-based deletion
+                   created
+                6. "Posted" label is honest that this is a client-side
+                   timestamp, not pulled from Farcaster's API */}
+            <section style={{ marginTop: 24 }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "#888",
+                  marginBottom: 8,
+                }}
+              >
+                Recent Casts
+              </div>
+
+              {posts.length === 0 ? (
                 <div
                   style={{
+                    background: "#0b1120",
+                    border: "1px solid #1f2937",
+                    borderRadius: 12,
+                    padding: 18,
+                    color: "#52525b",
                     fontSize: 13,
-                    color: "#888",
-                    marginBottom: 8,
+                    textAlign: "center",
                   }}
                 >
-                  Recent Casts
+                  No posts yet — generate a cast above and post your first
+                  one.
                 </div>
-
-                {posts.map((p, i) => (
+              ) : (
+                posts.map((p, i) => (
                   <div
-                    key={i}
+                    key={p.id}
                     style={{
                       background: "#0b1120",
                       padding: 14,
                       borderRadius: 12,
                       marginBottom: 10,
                       border: "1px solid #1f2937",
+                      borderTop: "1px solid #2d3748",
                     }}
                   >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: 8,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: 22,
+                          height: 22,
+                          borderRadius: "50%",
+                          background: "#1f2937",
+                          color: "#a1a1aa",
+                          fontSize: 11,
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {posts.length - i}
+                      </div>
+
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button
+                          onClick={() => {
+                            const cleanText = p.text
+                              .replace(/^🟦\s*AgentYap:\s*/i, "")
+                              .trim();
+                            navigator.clipboard.writeText(cleanText);
+                            setToast("Copied (text only)");
+                          }}
+                          style={{
+                            background: "transparent",
+                            color: "#71717a",
+                            border: "1px solid #1f2937",
+                            borderRadius: 8,
+                            padding: "4px 10px",
+                            fontSize: 12,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Copy
+                        </button>
+
+                        {p.text.startsWith("🟦") && (
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(p.text);
+                              setToast("Copied (with attribution)");
+                            }}
+                            style={{
+                              background: "transparent",
+                              color: "#71717a",
+                              border: "1px solid #1f2937",
+                              borderRadius: 8,
+                              padding: "4px 10px",
+                              fontSize: 12,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Copy + 🟦
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => {
+                            setPosts((current) =>
+                              current.filter((post) => post.id !== p.id)
+                            );
+                          }}
+                          style={{
+                            background: "transparent",
+                            color: "#71717a",
+                            border: "1px solid #1f2937",
+                            borderRadius: 8,
+                            padding: "4px 10px",
+                            fontSize: 12,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+
                     <div
                       style={{
                         whiteSpace: "pre-wrap",
@@ -1352,12 +1519,12 @@ export default function AgentYap() {
                         marginTop: 6,
                       }}
                     >
-                      {p.time}
+                      Posted {p.time}
                     </div>
                   </div>
-                ))}
-              </section>
-            )}
+                ))
+              )}
+            </section>
           </div>
         )}
 
