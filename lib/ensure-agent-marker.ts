@@ -1,9 +1,9 @@
-const AGENT_MARKER = "🟦AgentYap:";
+const AGENT_MARKER = "🟦 AgentYap:";
 
 export function ensureAgentYapMarker(text: string) {
   let cleaned = text
     .trim()
-    .replace(/^["“”]+|["“”]+$/g, "")
+    .replace(/^["""]+|["""]+$/g, "")
     .replace(/^Cast:\s*/i, "")
     .replace(/^Post:\s*/i, "")
     .trim();
