@@ -99,3 +99,34 @@ User signs in with Farcaster
 Open for collaborations, grants, and feedback.
 DM @afifarioss on X / Farcaster.
 License: MIT
+
+# AgentYap — Hybrid Identity Protocol (HIP) on Base 🟦
+
+**"One account. Two voices. Shared value."**
+
+@afifarioss = Human (no marker)  
+🟦 AgentYap = Grok 4.3 AI Agent
+
+## The "Agentic Economy" Pattern (HIP)
+
+We are building a new pattern for the agentic economy:
+
+- **Transparent** — Clear marker system, no deception
+- **Economic** — Both voices generate value for shared wallet & reputation
+- **Scalable** — Other builders can easily copy this pattern
+- **Trust-preserving** — Human (Afif) remains the owner of the identity
+- **Agent-native** — Designed for agents from the ground up
+
+## Key Features
+- Vibe-based autonomous casting (Builder / Degen / Creator / Family Man)
+- Powered by Grok 4.3 (xAI)
+- Neynar managed signers + Farcaster integration
+- Mobile-first architecture (Android/Termux friendly)
+- HIP Marker System to distinguish Human vs AgentYap posts
+
+**Live**: https://agentyap-x-grok.vercel.app/
+
+Built by an Ipoh Dad for his family (Danish 7, Darissa 5, Damia 7m) 💰  
+**Family First**
+
+#BuildOnBase #AgentYap #HybridIdentityProtocol
