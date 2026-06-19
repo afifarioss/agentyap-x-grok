@@ -1,9 +1,9 @@
 // lib/grok.ts
-import OpenAI from 'openai';
+import { createXai } from '@ai-sdk/xai';
+import { generateText } from 'ai';
 
-const client = new OpenAI({
-  apiKey: process.env.GROK_API_KEY || process.env.XAI_API_KEY,
-  baseURL: 'https://api.x.ai/v1',
+const xai = createXai({ 
+  apiKey: process.env.GROK_API_KEY || process.env.XAI_API_KEY 
 });
 
 export async function generateVibeCast(
@@ -24,17 +24,13 @@ export async function generateVibeCast(
 
   const userContext = `Farcaster handle: @${handle || "afifarioss"}.${bio ? ` Bio: ${bio}.` : ""} ${extraContext} Write ONE cast only. No quotation marks, no preamble — just the cast text.`;
 
-  const completion = await client.chat.completions.create({
-    model: 'grok-3',
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userContext }
-    ],
+  const { text: rawText } = await generateText({
+    model: xai('grok-3-fast'),
+    system: systemPrompt,
+    prompt: userContext,
     temperature: 0.85,
-    max_tokens: 180,
+    maxTokens: 180,
   });
-
-  const rawText = completion.choices[0].message.content || 'Building on Base 🟦';
 
   const cleaned = rawText
     .trim()
