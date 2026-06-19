@@ -1,5 +1,5 @@
-
 import { NextRequest, NextResponse } from "next/server";
+import { generateVibeCast } from "@/lib/grok";
 
 const VIBE_PROMPTS: Record<string, string> = {
   builder:
@@ -41,7 +41,6 @@ function checkRateLimit(ip: string) {
     if (entry.count >= RATE_LIMIT) {
       return false;
     }
-
     entry.count += 1;
     return true;
   }
@@ -85,75 +84,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiKey = process.env.GROK_API_KEY;
-
-    if (!apiKey) {
-      return NextResponse.json(
-        {
-          error: "Server misconfigured: missing GROK_API_KEY",
-        },
-        {
-          status: 500,
-        }
-      );
-    }
-
-    const systemPrompt = VIBE_PROMPTS[vibe];
-
-    const userContext = `Farcaster handle: @${handle || "anon"}.${
-      bio ? ` Bio/context: ${bio}` : ""
-    } Write ONE cast only, as a sample teaser. No quotation marks, no preamble — just the cast text.`;
-
-    const grokRes = await fetch("https://api.x.ai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: process.env.GROK_MODEL || "grok-4.3",
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt,
-          },
-          {
-            role: "user",
-            content: userContext,
-          },
-        ],
-        max_tokens: 100,
-        temperature: 0.9,
-      }),
-    });
-
-    const grokData = await grokRes.json();
-
-    if (!grokRes.ok) {
-      console.error("Grok sample-post error:", grokData);
-
-      return NextResponse.json(
-        {
-          error: grokData?.error?.message || "Failed to generate sample",
-        },
-        {
-          status: grokRes.status,
-        }
-      );
-    }
-
-    const rawText = grokData.choices?.[0]?.message?.content?.trim();
-
-    if (!rawText) {
-      return NextResponse.json(
-        {
-          error: "Grok returned no content",
-        },
-        {
-          status: 502,
-        }
-      );
-    }
+    // === Only Grok part changed ===
+    const rawText = await generateVibeCast(vibe, handle, bio, "Write ONE cast only as a sample teaser.");
 
     const text = cleanGeneratedText(rawText);
     const trimmed = text.length > 320 ? text.slice(0, 317) + "..." : text;
