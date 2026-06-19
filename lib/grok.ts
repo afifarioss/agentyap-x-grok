@@ -22,7 +22,7 @@ export async function generateVibeCast(
 
   const systemPrompt = VIBE_PROMPTS[vibe] || VIBE_PROMPTS.family;
 
-  const userContext = `Farcaster handle: @\( {handle || "afifarioss"}. \){bio ? ` Bio: ${bio}.` : ""} ${extraContext} Write ONE cast only. No quotation marks, no preamble — just the cast text.`;
+  const userContext = `Farcaster handle: @${handle || "afifarioss"}.${bio ? ` Bio: ${bio}.` : ""} ${extraContext} Write ONE cast only. No quotation marks, no preamble — just the cast text.`;
 
   const { text: rawText } = await generateText({
     model: xai.responses('grok-4.3'),
@@ -34,7 +34,7 @@ export async function generateVibeCast(
 
   const cleaned = rawText
     .trim()
-    .replace(/^["“”]+|["“”]+$/g, "")
+    .replace(/^["""]+|["""]+$/g, "")
     .replace(/^Cast:\s*/i, "")
     .replace(/^Post:\s*/i, "")
     .trim();
