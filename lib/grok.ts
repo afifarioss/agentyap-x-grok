@@ -1,9 +1,9 @@
 // lib/grok.ts
-import { createXai } from '@ai-sdk/xai';
-import { generateText } from 'ai';
+import OpenAI from 'openai';
 
-const xai = createXai({ 
-  apiKey: process.env.GROK_API_KEY || process.env.XAI_API_KEY 
+const client = new OpenAI({
+  apiKey: process.env.GROK_API_KEY || process.env.XAI_API_KEY,
+  baseURL: 'https://api.x.ai/v1',
 });
 
 export async function generateVibeCast(
@@ -11,7 +11,7 @@ export async function generateVibeCast(
   handle?: string,
   bio?: string,
   extraContext: string = "",
-  isAgent: boolean = true   // HIP: true = AgentYap 🟦, false = Human (Afif)
+  isAgent: boolean = true
 ): Promise<string> {
   const VIBE_PROMPTS: Record<string, string> = {
     builder: "Write a short, punchy Farcaster cast under 280 characters from a Base ecosystem builder sharing real shipping progress. Confident, technical, no fluff.",
@@ -24,13 +24,17 @@ export async function generateVibeCast(
 
   const userContext = `Farcaster handle: @${handle || "afifarioss"}.${bio ? ` Bio: ${bio}.` : ""} ${extraContext} Write ONE cast only. No quotation marks, no preamble — just the cast text.`;
 
-  const { text: rawText } = await generateText({
-    model: xai.responses('grok-4.3'),
-    system: systemPrompt,
-    prompt: userContext,
+  const completion = await client.chat.completions.create({
+    model: 'grok-3',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userContext }
+    ],
     temperature: 0.85,
-    maxTokens: 180,
+    max_tokens: 180,
   });
+
+  const rawText = completion.choices[0].message.content || 'Building on Base 🟦';
 
   const cleaned = rawText
     .trim()
