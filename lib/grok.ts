@@ -1,3 +1,4 @@
+// lib/grok.ts
 import { createXai } from '@ai-sdk/xai';
 import { generateText } from 'ai';
 
