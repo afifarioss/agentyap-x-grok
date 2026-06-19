@@ -10,18 +10,19 @@ export async function generateVibeCast(
   vibe: string,
   handle?: string,
   bio?: string,
-  extraContext: string = ""
+  extraContext: string = "",
+  isAgent: boolean = true   // HIP: true = AgentYap 🟦, false = Human (no marker)
 ): Promise<string> {
   const VIBE_PROMPTS: Record<string, string> = {
-    builder: "Write a short, punchy Farcaster cast under 280 characters from a Base ecosystem builder sharing real shipping progress. Confident, technical, no fluff, no hashtag spam. Sound like a builder.",
-    degen: "Write a short, punchy Farcaster cast under 280 characters with crypto-degen energy about market moves, alpha, or onchain activity on Base. Casual and energetic, but not cringe or scammy.",
-    creator: "Write a short, punchy Farcaster cast under 280 characters about growing as a content creator and building community on Farcaster/Base. Warm, encouraging, focused on connection and growth.",
-    family: "Write a short, punchy Farcaster cast under 280 characters about building on Base while balancing family life. Honest, grounded, no excessive emoji, sounds like a real dad who is also a builder.",
+    builder: "Write a short, punchy Farcaster cast under 280 characters from a Base ecosystem builder sharing real shipping progress. Confident, technical, no fluff.",
+    degen: "Write a short, punchy Farcaster cast under 280 characters with crypto-degen energy about market moves or Base activity. Casual and energetic.",
+    creator: "Write a short, punchy Farcaster cast under 280 characters about growing as a content creator on Farcaster/Base. Warm and encouraging.",
+    family: "Write a short, punchy Farcaster cast under 280 characters about building on Base as an Ipoh Dad balancing family life. Honest and grounded.",
   };
 
   const systemPrompt = VIBE_PROMPTS[vibe] || VIBE_PROMPTS.family;
 
-  const userContext = `Farcaster handle: @${handle || "afifarioss"}.${bio ? ` Bio: ${bio}.` : ""} ${extraContext} Write ONE cast only. No quotation marks, no preamble — just the cast text.`;
+  const userContext = `Farcaster handle: @\( {handle || "afifarioss"}. \){bio ? ` Bio: ${bio}.` : ""} ${extraContext} Write ONE cast only. No quotation marks, no preamble — just the cast text.`;
 
   const { text: rawText } = await generateText({
     model: xai.responses('grok-4.3'),
@@ -31,5 +32,12 @@ export async function generateVibeCast(
     maxTokens: 180,
   });
 
-  return rawText.trim();
+  const cleaned = rawText.trim()
+    .replace(/^["“”]+|["“”]+$/g, "")
+    .replace(/^Cast:\s*/i, "")
+    .replace(/^Post:\s*/i, "")
+    .trim();
+
+  const marker = isAgent ? " 🟦" : "";
+  return cleaned + marker;
 }
