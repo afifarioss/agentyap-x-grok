@@ -1,10 +1,5 @@
 // lib/grok.ts
-import { createXai } from '@ai-sdk/xai';
-import { generateText } from 'ai';
-
-const xai = createXai({ 
-  apiKey: process.env.GROK_API_KEY || process.env.XAI_API_KEY 
-});
+// Simple free version — no API call
 
 export async function generateVibeCast(
   vibe: string,
@@ -14,30 +9,19 @@ export async function generateVibeCast(
   isAgent: boolean = true
 ): Promise<string> {
   const VIBE_PROMPTS: Record<string, string> = {
-    builder: "Write a short, punchy Farcaster cast under 280 characters from a Base ecosystem builder sharing real shipping progress. Confident, technical, no fluff.",
-    degen: "Write a short, punchy Farcaster cast under 280 characters with crypto-degen energy about market moves or Base activity. Casual and energetic.",
-    creator: "Write a short, punchy Farcaster cast under 280 characters about growing as a content creator on Farcaster/Base. Warm and encouraging.",
-    family: "Write a short, punchy Farcaster cast under 280 characters about building on Base as an Ipoh Dad balancing family life. Honest and grounded.",
+    builder: "Just shipped something cool on Base. Real progress, no hype. Building for the long term. #BuildOnBase",
+    degen: "Base is cooking. Staying based and collecting alpha. Degens know. #Base",
+    creator: "Growing on Farcaster one cast at a time. Community is everything. Let's build together.",
+    family: "Ipoh Dad building on Base while raising family. Family first. Real talk. Real plays. 💰",
   };
 
-  const systemPrompt = VIBE_PROMPTS[vibe] || VIBE_PROMPTS.family;
+  let text = VIBE_PROMPTS[vibe as keyof typeof VIBE_PROMPTS] || VIBE_PROMPTS.family;
 
-  const userContext = `Farcaster handle: @${handle || "afifarioss"}.${bio ? ` Bio: ${bio}.` : ""} ${extraContext} Write ONE cast only. No quotation marks, no preamble — just the cast text.`;
+  if (extraContext) {
+    text = text + " " + extraContext;
+  }
 
-  const { text: rawText } = await generateText({
-    model: xai('grok-3-fast'),
-    system: systemPrompt,
-    prompt: userContext,
-    temperature: 0.85,
-    maxTokens: 180,
-  });
-
-  const cleaned = rawText
-    .trim()
-    .replace(/^["""]+|["""]+$/g, "")
-    .replace(/^Cast:\s*/i, "")
-    .replace(/^Post:\s*/i, "")
-    .trim();
+  const cleaned = text.trim();
 
   const marker = isAgent ? " 🟦" : "";
   return cleaned + marker;
