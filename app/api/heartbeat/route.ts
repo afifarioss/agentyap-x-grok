@@ -1,6 +1,6 @@
 // app/api/heartbeat/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { heartbeat } from "@/lib/agent-brain";
+import { heartbeat } from "@/lib/lib/agent-brain";
 
 export async function GET(req: NextRequest) {
   // Security: Only allow from Vercel Cron or your IP
