@@ -11,7 +11,7 @@ export async function generateVibeCast(
   handle?: string,
   bio?: string,
   extraContext: string = "",
-  isAgent: boolean = true   // HIP: true = AgentYap 🟦, false = Human (no marker)
+  isAgent: boolean = true   // HIP: true = AgentYap 🟦, false = Human (Afif)
 ): Promise<string> {
   const VIBE_PROMPTS: Record<string, string> = {
     builder: "Write a short, punchy Farcaster cast under 280 characters from a Base ecosystem builder sharing real shipping progress. Confident, technical, no fluff.",
@@ -32,7 +32,8 @@ export async function generateVibeCast(
     maxTokens: 180,
   });
 
-  const cleaned = rawText.trim()
+  const cleaned = rawText
+    .trim()
     .replace(/^["“”]+|["“”]+$/g, "")
     .replace(/^Cast:\s*/i, "")
     .replace(/^Post:\s*/i, "")
