@@ -10,17 +10,18 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "next": "16.2.4",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "@supabase/supabase-js": "^2.45.0",
+    "@ai-sdk/xai": "^1.2.9",
     "@farcaster/auth-kit": "0.8.2",
     "@farcaster/hub-nodejs": "^0.11.0",
     "@neynar/nodejs-sdk": "^2.0.0",
     "@privy-io/react-auth": "^2.0.0",
-    "viem": "^2.21.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "@vercel/speed-insights": "^2.0.0",
     "ai": "^4.3.9",
-    "@ai-sdk/xai": "^1.2.9"
+    "next": "16.2.4",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "viem": "^2.21.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
