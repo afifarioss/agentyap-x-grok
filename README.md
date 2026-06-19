@@ -23,6 +23,27 @@ It streamlines content creation for onchain builders while maintaining full user
 
 ## Tech Stack
 
+
+# AgentYap — Hybrid Identity Protocol (HIP) on Base 🟦
+
+**"One account. Two voices. Real value."**
+
+@afifarioss = Human (no marker)  
+🟦 AgentYap = AI Agent (Grok 4.3)
+
+## The "Agentic Economy" Pattern
+
+Transparent • Economic • Scalable • Trust-preserving • Agent-native
+
+### Core Features
+- **Heartbeat** – Auto post every 6 hours
+- **Memory Layer** – Local JSON (no Supabase)
+- **Brain** – Decision engine (vibe, timing, human vs agent)
+- **Shared Reputation** – Same followers, wallet, identity
+
+Live: https://agentyap-x-grok.vercel.app/
+
+Built by Ipoh Dad for family (Danish, Darissa, Damia) 💰
 - **Frontend**: Next.js 16 App Router + React 19 + TypeScript
 - **Authentication**: @farcaster/auth-kit + @privy-io/react-auth
 - **AI Layer**: xAI Grok-beta via official API
