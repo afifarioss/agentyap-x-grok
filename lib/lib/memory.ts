@@ -59,7 +59,6 @@ export async function recordPost(text: string, vibe: string, isAgent: boolean, h
   const memory = await loadMemory();
   const today = new Date().toISOString().split('T')[0];
 
-  // Reset daily count if new day
   if (memory.lastResetDate !== today) {
     memory.dailyCount = 0;
     memory.lastResetDate = today;
@@ -81,7 +80,6 @@ export async function recordPost(text: string, vibe: string, isAgent: boolean, h
     hash
   });
 
-  // Keep only last 100 posts
   if (memory.posts.length > 100) memory.posts.pop();
 
   await saveMemory(memory);
