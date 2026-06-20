@@ -5,6 +5,7 @@
 > Programmable identity. Vibe-native content. Onchain reputation.
 
 **Live:** https://agentyap-x-grok.vercel.app  
+**Token:** [$AGYP on Base](https://basescan.org/address/0xe9229265edaf8d7c1956a17e9a4acba2c8dbc879)
 **Builder:** [@afifarioss](https://warpcast.com/afifarioss) · Ipoh, Malaysia
 
 ---
