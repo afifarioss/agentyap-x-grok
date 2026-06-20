@@ -41,29 +41,7 @@ Unlike black-box AI bots, AgentYap uses explicit markers (🟦) to distinguish a
 ## Architecture
 
 
-┌─────────────────────────────────────────┐ │ Client Layer │ │ Next.js 16 App Router · React 19 · TS │ │ Tailwind CSS v4 · Mobile-first │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Auth Layer │ │ @farcaster/auth-kit · FID-based login │ │ Neynar v2 signer creation & management │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Generation Layer │ │ Vibe templates → Cast generation │ │ (Grok API integration ready) │ │ Rate limiting · Input sanitization │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Publishing Layer │ │ Neynar API · Cast publication │ │ Farcaster Hub verification │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Base L2 Settlement │ │ viem · Onchain identity anchoring │ │ (Talent Protocol integration target) │ └─────────────────────────────────────────┘
-
-
-
-
-
-
-
-## Neynar Signer Setup
-
-AgentYap uses **managed signers** via Neynar v2. This is the fastest path for builders — no app registration, no redirect URLs.
-
-### What You Need
-1. **Neynar API Key** — get from [neynar.com](https://neynar.com)
-2. **Signer UUID** — created via API or Neynar dashboard
-
-### The Flow
-
-
-
-
-
-
+┌─────────────────────────────────────────┐ │ Client Layer │ │ Next.js 16 App Router · React 19 · TS │ │ Tailwind CSS v4 · Mobile-first │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Auth Layer │ │ @farcaster/auth-kit · FID-based login │ │ Neynar v2 signer creation & management │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Generation Layer │ │ Vibe templates → Cast generation │ │ (Grok API integration ready) │ │ Rate limiting · Input sanitization │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Publishing Layer │ │ Neynar API · Cast publication │ │ Farcaster Hub verification │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Base L2 Settlement │ │ viem · Onchain identity anchoring │ │ (Talent Protocol integration target) │ └─────────────────────────────────────────
 
 
 
@@ -84,6 +62,8 @@ AgentYap uses **managed signers** via Neynar v2. This is the fastest path for bu
 
 ---
 
+
+
 ## API Routes
 
 | Endpoint | Method | Purpose |
@@ -96,6 +76,73 @@ AgentYap uses **managed signers** via Neynar v2. This is the fastest path for bu
 | `/api/heartbeat` | GET | Health check + uptime monitoring |
 
 ---
+
+
+
+## Neynar Signer Setup
+
+AgentYap uses **managed signers** via Neynar v2. This is the fastest path for builders — no app registration, no redirect URLs.
+
+### What You Need
+1. **Neynar API Key** — get from [neynar.com](https://neynar.com)
+2. **Signer UUID** — created via API or Neynar dashboard
+
+### The Flow
+
+
+
+
+Create Signer → Get Deeplink → User Approves in Warpcast → Poll for Approval → Publish Casts
+
+
+Returns:
+
+
+
+{
+  "signer_uuid": "abc-123-...",
+  "deeplink_url": "https://warpcast.com/~/signer?token=..."
+}
+
+
+
+
+
+2. Send deeplink to user User opens the URL in Warpcast and taps "Approve".
+3. Poll until approved
+
+
+
+
+
+GET /api/check-signer?uuid=abc-123-...
+
+
+
+Poll every 5 seconds, max 12 retries (60 seconds total).
+4. If timeout Show user a "Retry" button instead of a dead spinner. The signer may still be pending.
+
+
+
+
+Environment Variables
+
+
+NEYNAR_API_KEY=        # Required
+NEYNAR_CLIENT_ID=      # Required
+
+
+
+
+Common Errors
+ 
+ Signer not found  — UUID expired or was never created
+ 
+ Approval timeout  — User didn't approve in Warpcast within 60s
+ 
+ Invalid API key  — Check your Neynar dashboard
+
+
 
 ## Vibe System
 
@@ -111,6 +158,9 @@ interface VibeConfig {
   hashtagStrategy: 'minimal' | 'organic' | 'none';
   emojiDensity: 'low' | 'medium' | 'high';
 }
+
+
+
 
 
 Security Model
