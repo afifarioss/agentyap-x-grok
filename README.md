@@ -1,6 +1,6 @@
 # AgentYap
 
-**Autonomous AI Agent for Farcaster — Built on Base**
+**OpenRouter-powered Autonomous AI Agent for Farcaster — Built on Base**
 
 > Programmable identity. Vibe-native content. Onchain reputation.
 
@@ -40,15 +40,10 @@ Unlike black-box AI bots, AgentYap uses explicit markers (🟦) to distinguish a
 
 ## Architecture
 
-
-┌─────────────────────────────────────────┐ │ Client Layer │ │ Next.js 16 App Router · React 19 · TS │ │ Tailwind CSS v4 · Mobile-first │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Auth Layer │ │ @farcaster/auth-kit · FID-based login │ │ Neynar v2 signer creation & management │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Generation Layer │ │ Vibe templates → Cast generation │ │ (OpenRouter free AI — no payment card Ready) │ │ Rate limiting · Input sanitization │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Publishing Layer │ │ Neynar API · Cast publication │ │ Farcaster Hub verification │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Base L2 Settlement │ │ viem · Onchain identity anchoring │ │ (Talent Protocol integration target) │ └─────────────────────────────────────────
-
+┌─────────────────────────────────────────┐ │ Client Layer │ │ Next.js 16 App Router · React 19 · TS │ │ Tailwind CSS v4 · Mobile-first │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Auth Layer │ │ @farcaster/auth-kit · FID-based login │ │ Neynar v2 signer creation & management │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Generation Layer │ │ Vibe templates → Cast generation │ │ (OpenRouter free AI — no payment card) │ │ Rate limiting · Input sanitization │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Publishing Layer │ │ Neynar API · Cast publication │ │ Farcaster Hub verification │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Base L2 Settlement │ │ viem · Onchain identity anchoring │ │ (Talent Protocol integration target) │ └─────────────────────────────────────────┘
 
 
 ---
-
-
-
 
 ## Neynar Signer Flow (Managed)
 
@@ -84,117 +79,48 @@ const pollSigner = async (uuid: string) => {
 };
 
 
-
----
-
-
-
-
-## Technical Specifications
-
-| Component | Tech | Version |
-|-----------|------|---------|
-| Framework | Next.js | 16.2.4 |
-| Runtime | Node.js | 20+ |
-| Language | TypeScript | 5.x |
-| Auth | @farcaster/auth-kit | 0.8.2 |
-| Farcaster SDK | @neynar/nodejs-sdk | 2.x |
-| EVM | viem | 2.21.x |
-| Styling | Tailwind CSS | 4.x |
-| Deployment | Vercel | Edge + Serverless |
-
-
-
-
----
-
-
-
-## API Routes
-
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/api/create-signer` | POST | Initialize Neynar signer for FID |
-| `/api/check-signer` | GET | Poll signer approval status |
-| `/api/generate-post` | POST | Generate cast from vibe + context |
-| `/api/sample-post` | POST | Generate sample cast (rate-limited) |
-| `/api/post-cast` | POST | Publish approved cast to Farcaster |
-| `/api/heartbeat` | GET | Health check + uptime monitoring |
-
----
-
-
-
-## Neynar Signer Setup
-
-AgentYap uses **managed signers** via Neynar v2. This is the fastest path for builders — no app registration, no redirect URLs.
-
-### What You Need
-1. **Neynar API Key** — get from [neynar.com](https://neynar.com)
-2. **Signer UUID** — created via API or Neynar dashboard
-
-### The Flow
-
-
-
-
-Create Signer → Get Deeplink → User Approves in Warpcast → Poll for Approval → Publish Casts
-
-
-Returns:
-
-
-
-{
-  "signer_uuid": "abc-123-...",
-  "deeplink_url": "https://warpcast.com/~/signer?token=..."
-}
-
-
-
-
-
-2. Send deeplink to user User opens the URL in Warpcast and taps "Approve".
-3. Poll until approved
-
-
-
-
-
-GET /api/check-signer?uuid=abc-123-...
-
-
-
-Poll every 5 seconds, max 12 retries (60 seconds total).
-4. If timeout Show user a "Retry" button instead of a dead spinner. The signer may still be pending.
-
-
-
-
-Environment Variables
-
-
-NEYNAR_API_KEY=        # Required
-NEYNAR_CLIENT_ID=      # Required
-
-
-
-
-Common Errors
+Key details:
  
- Signer not found  — UUID expired or was never created
+60 second timeout prevents infinite hanging
  
- Approval timeout  — User didn't approve in Warpcast within 60s
+2 second interval is aggressive enough that users don't wait forever, but not so aggressive that you're hammering the API
  
- Invalid API key  — Check your Neynar dashboard
+Retry button — if timeout hits, show the user a "Retry" button instead of a dead spinner
 
 
 
-## Vibe System
 
-Each vibe is a **persona primitive** — a structured prompt template that shapes output style without losing the user's voice.
+Technical Specifications
 
-```typescript
+
+Component	Tech	Version	
+Framework	Next.js	16.2.4	
+Runtime	Node.js	20+	
+Language	TypeScript	5.x	
+Auth	@farcaster/auth-kit	0.8.2	
+Farcaster SDK	@neynar/nodejs-sdk	2.x	
+EVM	viem	2.21.x	
+Styling	Tailwind CSS	4.x	
+Deployment	Vercel	Edge + Serverless	
+
+
+
+
+API Routes
+
+Endpoint	Method	Purpose	
+`/api/create-signer`	POST	Initialize Neynar signer for FID	
+`/api/check-signer`	GET	Poll signer approval status	
+`/api/generate-post`	POST	Generate cast from vibe + context	
+`/api/sample-post`	POST	Generate sample cast (rate-limited)	
+`/api/post-cast`	POST	Publish approved cast to Farcaster	
+`/api/heartbeat`	GET	Health check + uptime monitoring	
+
+
+
+Vibe System
+Each vibe is a persona primitive — a structured prompt template that shapes output style without losing the user's voice
+
 type Vibe = 'builder' | 'degen' | 'creator' | 'family';
 
 interface VibeConfig {
@@ -220,11 +146,6 @@ Rate limiting: 10 samples per IP per 10-minute window
 Input sanitization: All user inputs validated server-side
  
 No persistent storage: Zero database attack surface
-
-
-
-
-
 Base Talent Protocol Integration Roadmap
 Phase 1: Reputation Anchoring (Current)
  
@@ -250,17 +171,12 @@ Cross-protocol reputation: Export AgentYap score to other Base dApps
 
 
 
-
-
 Grant Alignment
 
-
 Program	Fit	Use of Funds	
-Base Builder Grants	High	Grok API integration, gas subsidies	
+Base Builder Grants	High	OpenRouter free tier, gas subsidies	
 Talent Protocol Grants	High	Reputation layer development, attestations	
 Neynar Developer Fund	Medium	Advanced signer features, analytics	
-xAI Developer Access	Medium	Production API credits for agent generation	
-
 
 
 
@@ -271,69 +187,3 @@ Deployments	50+ test casts
 Vibes tested	4/4 active	
 Avg. generation time	<2s	
 Mobile compatibility	100%	
-
-
-
-
-
-Local Development
-
-# Clone
-git clone https://github.com/afifarioss/agentyap-x-grok.git
-cd agentyap-x-grok
-
-# Install
-npm install
-
-# Environment
-cp .env.example .env.local
-# Edit: NEYNAR_API_KEY, NEYNAR_CLIENT_ID, NEXT_PUBLIC_FARCASTER_CLIENT_ID
-
-# Dev server
-npm run dev
-
-# Type check
-npm run typecheck
-
-# Build
-npm run build
-
-
-
-
-Environment Variables
-
-# Required
-NEYNAR_API_KEY=              # Neynar API key
-NEYNAR_CLIENT_ID=            # Neynar app client ID
-NEXT_PUBLIC_FARCASTER_CLIENT_ID=  # Same as above (public)
-
-# Optional — Real AI generation
-OPENROUTER_API_KEY =                # OPENROUTER_API_KEY 
-OPENROUTER_API_KEY=                 # Fallback
-
-# Optional — Cron security
-CRON_SECRET=                 # Random string for heartbeat auth
-
-
-
-
-
-Team
-
-Role	Handle	Contribution	
-Builder	[@afifarioss](https://warpcast.com/afifarioss)	Architecture, product, Base integration	
-Family CFO	Danish (7), Darissa (5), Damia (7m)	Motivation, user testing, bedtime stories	
-
-Built in Ipoh, Malaysia · Shipping for Base
-
-
-
-
-
-License
-MIT — Open for forks, integrations, and protocol extensions.
-
-
-
-AgentYap is a submission for Base Builder Grants and Talent Protocol ecosystem funding. All code is open source. All casts are human-approved. 
