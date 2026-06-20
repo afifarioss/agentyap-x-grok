@@ -7,3 +7,4 @@ export async function heartbeat() {
     version: "1.0.0",
   };
 }
+
