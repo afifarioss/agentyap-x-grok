@@ -187,3 +187,63 @@ Deployments	50+ test casts
 Vibes tested	4/4 active	
 Avg. generation time	<2s	
 Mobile compatibility	100%	
+
+
+
+
+Local Development
+
+
+# Clone
+git clone https://github.com/afifarioss/agentyap-x-grok.git
+cd agentyap-x-grok
+
+# Install
+npm install
+
+# Environment
+cp .env.example .env.local
+# Edit: NEYNAR_API_KEY, NEYNAR_CLIENT_ID, NEXT_PUBLIC_FARCASTER_CLIENT_ID
+
+# Dev server
+npm run dev
+
+# Type check
+npm run typecheck
+
+# Build
+npm run build
+
+
+
+
+Environment Variables
+
+# Required
+NEYNAR_API_KEY=              # Neynar API key
+NEYNAR_CLIENT_ID=            # Neynar app client ID
+NEXT_PUBLIC_FARCASTER_CLIENT_ID=  # Same as above (public)
+
+# Optional — Real AI generation (OpenRouter free tier, no payment card)
+OPENROUTER_API_KEY=          # Get free key at openrouter.ai
+
+# Optional — Cron security
+CRON_SECRET=                 # Random string for heartbeat auth
+
+
+Team
+
+Role	Handle	Contribution	
+Builder	[@afifarioss](https://warpcast.com/afifarioss)	Architecture, product, Base integration	
+Family CFO	Danish (7), Darissa (5), Damia (7m)	Motivation, user testing, bedtime stories	
+
+Built in Ipoh, Malaysia · Shipping for Base
+
+
+
+
+
+License
+MIT — Open for forks, integrations, and protocol extensions.
+AgentYap is a submission for Base Builder Grants and Talent Protocol ecosystem funding. All code is open source. All casts are human-approved.
+
