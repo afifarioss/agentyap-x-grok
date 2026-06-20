@@ -47,6 +47,49 @@ Unlike black-box AI bots, AgentYap uses explicit markers (🟦) to distinguish a
 
 ---
 
+
+
+
+## Neynar Signer Flow (Managed)
+
+The signer creation follows a three-step cycle:
+
+1. **Create:** Your app calls `/api/create-signer` which returns a deeplink and a signer UUID
+2. **Approve:** User opens the deeplink in Warpcast to approve
+3. **Poll:** Your app polls `/api/check-signer` every 2 seconds until the signer status is `approved`
+
+The polling loop is where most users get stuck. Here's the actual implementation:
+
+```typescript
+// Poll every 2 seconds with exponential backoff
+// Timeout after 60 seconds to prevent infinite loops
+
+const pollSigner = async (uuid: string) => {
+  const timeout = 60000; // 60 second max
+  const start = Date.now();
+  const interval = 2000;
+
+  while (Date.now() - start < timeout) {
+    const response = await fetch(`/api/check-signer?uuid=${uuid}`);
+    const data = await response.json();
+
+    if (data.status === 'approved') {
+      return data.signer;
+    }
+
+    await new Promise(resolve => setTimeout(resolve, interval));
+  }
+
+  throw new Error('Signer approval timed out — show user a retry button');
+};
+
+
+
+---
+
+
+
+
 ## Technical Specifications
 
 | Component | Tech | Version |
@@ -59,6 +102,9 @@ Unlike black-box AI bots, AgentYap uses explicit markers (🟦) to distinguish a
 | EVM | viem | 2.21.x |
 | Styling | Tailwind CSS | 4.x |
 | Deployment | Vercel | Edge + Serverless |
+
+
+
 
 ---
 
