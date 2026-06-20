@@ -1,0 +1,14 @@
+// lib/onchain.ts
+// Basescan links for onchain contracts
+
+const BASESCAN_URL = "https://basescan.org/address";
+
+export const TOKEN_CONTRACT = "0xE9229265EDA78D7C1956a17E9a4acba2c8DBC879"; // $AGYP
+
+export function getTokenUrl(): string {
+  return `${BASESCAN_URL}/${TOKEN_CONTRACT}`;
+}
+
+export function getContractUrl(address: string): string {
+  return `${BASESCAN_URL}/${address}`;
+}
