@@ -263,8 +263,8 @@ NEYNAR_CLIENT_ID=            # Neynar app client ID
 NEXT_PUBLIC_FARCASTER_CLIENT_ID=  # Same as above (public)
 
 # Optional — Real AI generation
-GROK_API_KEY=                # xAI Grok API key
-XAI_API_KEY=                 # Fallback
+OPENROUTER_API_KEY =                # OPENROUTER_API_KEY 
+OPENROUTER_API_KEY=                 # Fallback
 
 # Optional — Cron security
 CRON_SECRET=                 # Random string for heartbeat auth
