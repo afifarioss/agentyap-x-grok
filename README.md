@@ -46,6 +46,27 @@ Unlike black-box AI bots, AgentYap uses explicit markers (🟦) to distinguish a
 
 
 
+
+
+
+## Neynar Signer Setup
+
+AgentYap uses **managed signers** via Neynar v2. This is the fastest path for builders — no app registration, no redirect URLs.
+
+### What You Need
+1. **Neynar API Key** — get from [neynar.com](https://neynar.com)
+2. **Signer UUID** — created via API or Neynar dashboard
+
+### The Flow
+
+
+
+
+
+
+
+
+
 ---
 
 ## Technical Specifications
