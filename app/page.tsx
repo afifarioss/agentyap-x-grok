@@ -50,14 +50,6 @@ const BACKOFF_INTERVAL_MS = 10000;
 type Step = "setup" | "signer" | "dashboard";
 type SignerStatus = "idle" | "pending" | "approved" | "timeout";
 
-// 🔧 FIX — added stable `id` field. Previously posts only had
-// { text, time }, which forced the Recent Casts list to use array
-// index as the React key. Once Delete was added, that became a real
-// bug risk: deleting a post shifts every index after it, so React can
-// misattribute state to the wrong card, and a fast double-click could
-// delete the wrong post. Every post now gets a real unique id at
-// creation time, and both the React key and the delete handler use
-// that id instead of position.
 type Post = { id: string; text: string; time: string };
 
 function track(event: string, data?: Record<string, any>) {
@@ -96,8 +88,6 @@ export default function AgentYap() {
 
   const [error, setError] = useState<string | null>(null);
 
-  // 🔧 NEW — toast state, used by the Copy buttons in Recent Casts to
-  // give feedback ("Copied (text only)" / "Copied (with attribution)")
   const [toast, setToast] = useState<string | null>(null);
 
   const [signerStatus, setSignerStatus] = useState<SignerStatus>("idle");
@@ -135,7 +125,6 @@ export default function AgentYap() {
     return () => clearTimeout(timeout);
   }, [error]);
 
-  // 🔧 NEW — auto-clear toast after 4s, same pattern as error clearing
   useEffect(() => {
     if (!toast) return;
 
@@ -276,6 +265,16 @@ export default function AgentYap() {
 
       if (!res.ok) {
         throw new Error(data.error || "Could not create signer");
+      }
+
+      // 🔧 FIX — handle demo mode (Neynar 402 / no credits)
+      if (data.demo === true) {
+        setError(
+          "Demo mode — Neynar API credits required to publish casts. You can still generate and preview casts below. Tap a vibe to try it out!"
+        );
+        autoConnectFiredRef.current = false;
+        track("signer_demo_mode", { message: data.message });
+        return;
       }
 
       setSignerUuid(data.signer_uuid);
@@ -482,8 +481,6 @@ export default function AgentYap() {
         throw new Error(postData.error || "Post failed");
       }
 
-      // 🔧 FIX — every new post now gets a real stable id via
-      // makePostId(), not just { text, time }
       setPosts((currentPosts) => [
         {
           id: makePostId(),
@@ -627,7 +624,6 @@ export default function AgentYap() {
             </div>
           )}
 
-          {/* 🔧 NEW — toast display, used by Recent Casts copy buttons */}
           {toast && (
             <div
               style={{
@@ -1365,19 +1361,6 @@ export default function AgentYap() {
                 </section>
               )}
 
-              {/* 🔧 UPDATED — Recent Casts section, addressing jesseXBT's
-                  feedback across multiple rounds:
-                  1. Numbered badge per post (batch distinguishability)
-                  2. borderTop added so consecutive cards feel separated
-                  3. Per-post Copy (strips marker) + Copy+🟦 (keeps
-                     attribution, only shown if the post actually has the
-                     marker) + Delete actions
-                  4. Empty state instead of rendering nothing
-                  5. Delete + React key now use stable post.id, not array
-                     index — fixes the real bug risk index-based deletion
-                     created
-                  6. "Posted" label is honest that this is a client-side
-                     timestamp, not pulled from Farcaster's API */}
               <section style={{ marginTop: 24 }}>
                 <div
                   style={{
