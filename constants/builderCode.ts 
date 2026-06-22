@@ -1,0 +1,2 @@
+export const BUILDER_CODE = "bc_e1fdspjz";
+export const AGENT_WALLET = "0x7845D45d9E53268EBFf3C4a9daBb994cE5b93918";
