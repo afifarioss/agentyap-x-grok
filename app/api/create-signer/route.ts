@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 export async function POST() {
   try {
     const signedKey = await getSignedKey();
+
     return NextResponse.json(
       {
         signer_uuid: signedKey.signer_uuid,
@@ -15,20 +16,24 @@ export async function POST() {
   } catch (error: any) {
     console.error("create-signer error:", error);
 
-    // Check for Neynar 402 (Payment Required / credits exhausted)
-    const errorMessage = error.message || "";
-    const is402 = 
-      error.status === 402 || 
-      errorMessage.includes("402") || 
+    const errorMessage = error?.message || error?.toString() || "";
+
+    const is402 =
+      error?.status === 402 ||
+      error?.statusCode === 402 ||
+      errorMessage.includes("402") ||
       errorMessage.includes("Payment Required") ||
+      errorMessage.includes("payment required") ||
       errorMessage.includes("credits") ||
-      errorMessage.includes("quota");
+      errorMessage.includes("quota") ||
+      errorMessage.includes("limit");
 
     if (is402) {
       return NextResponse.json(
         {
           demo: true,
-          message: "Demo mode — Neynar API credits required for signer creation. You can still generate and preview casts. Publishing requires credits.",
+          message:
+            "Demo mode — Neynar API credits required for signer creation. You can still generate and preview casts. Publishing requires credits.",
           signer_uuid: null,
           approval_url: null,
         },
