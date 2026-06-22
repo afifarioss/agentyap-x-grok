@@ -41,7 +41,8 @@ Unlike black-box AI bots, AgentYap uses explicit markers (🟦) to distinguish a
 
 ## Architecture
 
-┌─────────────────────────────────────────┐ │ Client Layer │ │ Next.js 16 App Router · React 19 · TS │ │ Tailwind CSS v4 · Mobile-first │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Auth Layer │ │ @farcaster/auth-kit · FID-based login │ │ Neynar v2 signer creation & management │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Generation Layer │ │ Vibe templates → Cast generation │ │ (OpenRouter free AI — no payment card) │ │ Rate limiting · Input sanitization │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Publishing Layer │ │ Neynar API · Cast publication │ │ Farcaster Hub verification │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Base L2 Settlement │ │ viem · Onchain identity anchoring │ │ (Talent Protocol integration target) │ └─────────────────────────────────────────┘
+┌─────────────────────────────────────────┐ │ Client Layer │ │ | Framework | Next.js | 15.x App Router|
+ · React 19 · TS │ │ Tailwind CSS v4 · Mobile-first │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Auth Layer │ │ @farcaster/auth-kit · FID-based login │ │ Neynar v2 signer creation & management │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Generation Layer │ │ Vibe templates → Cast generation │ │ (OpenRouter free AI — no payment card) │ │ Rate limiting · Input sanitization │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Publishing Layer │ │ Neynar API · Cast publication │ │ Farcaster Hub verification │ └─────────────────────────────────────────┘  │ ┌─────────────────────────────────────────┐ │ Base L2 Settlement │ │ viem · Onchain identity anchoring │ │ (Talent Protocol integration target) │ └─────────────────────────────────────────┘
 
 
 ---
@@ -95,7 +96,7 @@ Technical Specifications
 
 
 Component	Tech	Version	
-Framework	Next.js	16.2.4	
+Framework Next.js 15.x App Router
 Runtime	Node.js	20+	
 Language	TypeScript	5.x	
 Auth	@farcaster/auth-kit	0.8.2	
