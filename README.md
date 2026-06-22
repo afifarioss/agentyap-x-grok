@@ -133,63 +133,121 @@ Open [http://localhost:3000](http://localhost:3000)
 
 > **AI cost = $0.** OpenRouter's free tier covers Llama 4 Maverick fully. No credit card needed to run the core AI generation feature.
 
+### Neynar Setup (Step-by-Step)
+
+This is where most people get stuck. Here's the exact sequence:
+
+**1. Create a Neynar account**
+Go to [dev.neynar.com](https://dev.neynar.com) → sign up → create an app.
+
+**2. Get your API key and Client ID**
+Dashboard → your app → copy `API Key` and `Client ID`.
+Both go into `.env.local`:
+```env
+NEYNAR_API_KEY=your_api_key_here
+NEYNAR_CLIENT_ID=your_client_id_here
+NEXT_PUBLIC_FARCASTER_CLIENT_ID=your_client_id_here   # same value
+```
+
+**3. Create a dedicated Farcaster developer account**
+Do NOT use your personal Farcaster account here. Create a new one at [warpcast.com](https://warpcast.com), then export the recovery phrase.
+```env
+FARCASTER_DEVELOPER_MNEMONIC=word1 word2 word3 ... word12
+```
+
+**4. Free tier limits**
+Neynar's free tier includes a limited number of signer creation calls. If you hit a `402` error, the app automatically falls back to demo mode — AI generation still works, publishing is paused until you add credits.
+
+**5. Verify it's working**
+Run `npm run dev`, sign in with Farcaster, and check the browser console for:
+```
+✅ Signer created: { signer_uuid: "...", status: "pending_approval" }
+```
+If you see `{ demo: true }` instead, your Neynar credits are exhausted.
+
 ---
 
-## 🔄 Neynar Signer Flow — Full Technical Detail
+## 🔄 Architecture
 
-AgentYap uses Neynar's **managed signer** architecture. Here is the exact sequence a developer needs to understand to fork or extend this project:
+High-level mental model before diving into implementation:
 
 ```
-1. USER SIGNS IN
-   └─ @farcaster/auth-kit handles SIWF (Sign In With Farcaster)
-   └─ Returns: { fid, username, pfpUrl, custody address }
-
-2. SIGNER CREATION  →  POST /api/create-signer
-   └─ Calls Neynar POST /v2/farcaster/signer
-   └─ Returns: { signer_uuid, signer_approval_url, public_key }
-   └─ Demo mode: if Neynar 402 error → returns { demo: true }
-
-3. SIGNER APPROVAL
-   └─ Frontend redirects user to signer_approval_url (Warpcast deeplink)
-   └─ User taps "Approve" in Warpcast mobile
-   └─ Signer status transitions: pending_approval → approved
-
-4. SIGNER STATUS POLL  →  GET /api/check-signer?signer_uuid=xxx
-   └─ Calls Neynar GET /v2/farcaster/signer/:signer_uuid
-   └─ Frontend polls every 2s until status === "approved"
-   └─ Timeout after 5 minutes
-
-5. CAST GENERATION  →  POST /api/generate-cast
-   └─ Sends { vibe, userContext } to OpenRouter
-   └─ Model: meta-llama/llama-4-maverick (free tier)
-   └─ Returns: { castText } in <2 seconds
-
-6. CAST PUBLISHING  →  POST /api/post-cast
-   └─ Payload: { signerUuid, castText }
-   └─ Calls Neynar POST /v2/farcaster/cast
-   └─ Appends 🟦 attribution marker to cast text
-   └─ Returns: { cast_hash, cast_url }
+User (Farcaster FID)
+        │
+        ▼
+@farcaster/auth-kit ──── SIWF login ────► { fid, username, pfp }
+        │
+        ▼
+POST /api/create-signer
+        │ Neynar v2 managed signer
+        ▼
+{ signer_uuid, signer_approval_url }
+        │
+        ├──► User opens deeplink in Warpcast → taps Approve
+        │
+        ▼
+GET /api/check-signer?uuid={signer_uuid}   ← polls with backoff
+        │ status: pending_approval → approved
+        ▼
+POST /api/generate-cast  { vibe, userContext }
+        │ OpenRouter → Llama 4 Maverick (free)
+        ▼
+{ castText }  ← user reviews + edits
+        │
+        ▼
+POST /api/post-cast  { signerUuid, castText }
+        │ Neynar publishes on user's behalf
+        ▼
+Cast live on Farcaster with 🟦 marker
 ```
 
-### Key files for this flow
+### Key files
 
 ```
 app/
 ├── api/
-│   ├── create-signer/route.ts     ← Step 2: signer creation + demo fallback
-│   ├── check-signer/route.ts      ← Step 4: signer status polling
-│   ├── generate-cast/route.ts     ← Step 5: OpenRouter AI call
-│   └── post-cast/route.ts         ← Step 6: Neynar cast publish
-├── page.tsx                       ← Main UI, handles all state transitions
+│   ├── create-signer/route.ts   ← signer creation + demo fallback
+│   ├── check-signer/route.ts    ← signer status polling
+│   ├── generate-cast/route.ts   ← OpenRouter AI call
+│   └── post-cast/route.ts       ← Neynar cast publish
+├── page.tsx                     ← main UI, all state transitions
 └── components/
-    └── VibePicker.tsx             ← Vibe selection UI
+    └── VibePicker.tsx           ← vibe selection UI
 lib/
-├── neynar.ts                      ← Neynar SDK wrapper
-├── openrouter.ts                  ← OpenRouter API wrapper
-└── onchain.ts                     ← Basescan links for $AGYP
+├── neynar.ts                    ← Neynar SDK wrapper
+├── openrouter.ts                ← OpenRouter API wrapper
+└── onchain.ts                   ← Basescan links for $AGYP
 ```
 
-### Demo Mode Behavior
+---
+
+## 🔑 Signer Flow
+
+After setup, `POST /api/create-signer` returns a `signer_approval_url` deeplink. The user opens this in Warpcast to approve the signer. Meanwhile the frontend polls `GET /api/check-signer` until the signer is ready.
+
+The polling loop with exponential backoff — inline here because this is the part most developers get wrong:
+
+```typescript
+const pollForSigner = async (signerUuid: string, maxAttempts = 30) => {
+  for (let i = 0; i < maxAttempts; i++) {
+    const res = await fetch(`/api/check-signer?uuid=${signerUuid}`)
+    const data = await res.json()
+
+    if (data.status === 'approved') return data.signer
+
+    // Exponential backoff: 2s → 3s → 4.5s → ... capped at 10s
+    // 30 attempts × avg ~4s delay = ~60 seconds total timeout
+    const delay = Math.min(2000 * Math.pow(1.5, i), 10000)
+    await new Promise(r => setTimeout(r, delay))
+  }
+
+  throw new Error('Signer approval timed out after 60 seconds')
+}
+```
+
+The backoff prevents hammering the Neynar API while keeping wait times short early on. The 30-attempt cap (≈60s total) stops infinite polling if the user closes Warpcast without approving.
+
+### Demo Mode
 
 When Neynar API credits are exhausted, `/api/create-signer` returns:
 
@@ -198,7 +256,7 @@ When Neynar API credits are exhausted, `/api/create-signer` returns:
 ```
 
 The frontend detects `demo: true` and:
-- Shows a friendly banner explaining demo mode
+- Shows a banner explaining demo mode
 - Still allows vibe selection and AI cast generation
 - Disables the publish button with a clear message
 - Does not crash or throw errors
