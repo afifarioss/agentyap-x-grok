@@ -512,321 +512,709 @@ export default function AgentYap() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background:
-          "radial-gradient(circle at top, #111827 0%, #050510 45%, #020617 100%)",
-        color: "#e0e0ff",
-        padding: 20,
-        fontFamily: "monospace",
-      }}
-    >
-      <div style={{ maxWidth: 640, margin: "0 auto" }}>
-        <style jsx global>{`
-          @keyframes spin {
-            from {
-              transform: rotate(0deg);
+    <>
+      <meta name="base:app_id" content="6a396c1230074aac8d95099e" />
+      <div
+        style={{
+          minHeight: "100vh",
+          background:
+            "radial-gradient(circle at top, #111827 0%, #050510 45%, #020617 100%)",
+          color: "#e0e0ff",
+          padding: 20,
+          fontFamily: "monospace",
+        }}
+      >
+        <div style={{ maxWidth: 640, margin: "0 auto" }}>
+          <style jsx global>{`
+            @keyframes spin {
+              from {
+                transform: rotate(0deg);
+              }
+              to {
+                transform: rotate(360deg);
+              }
             }
-            to {
-              transform: rotate(360deg);
+
+            @keyframes pulseGlow {
+              0% {
+                box-shadow: 0 0 0 rgba(34, 197, 94, 0);
+              }
+              50% {
+                box-shadow: 0 0 24px rgba(34, 197, 94, 0.18);
+              }
+              100% {
+                box-shadow: 0 0 0 rgba(34, 197, 94, 0);
+              }
             }
-          }
+          `}</style>
 
-          @keyframes pulseGlow {
-            0% {
-              box-shadow: 0 0 0 rgba(34, 197, 94, 0);
-            }
-            50% {
-              box-shadow: 0 0 24px rgba(34, 197, 94, 0.18);
-            }
-            100% {
-              box-shadow: 0 0 0 rgba(34, 197, 94, 0);
-            }
-          }
-        `}</style>
-
-        <header style={{ marginBottom: 24, paddingTop: 12 }}>
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              background: "#111827",
-              border: "1px solid #1f2937",
-              color: "#22c55e",
-              fontSize: 12,
-              padding: "6px 10px",
-              borderRadius: 999,
-              marginBottom: 14,
-            }}
-          >
-            GROK + NEYNAR • BUILT ON FARCASTER
-          </div>
-
-          <div
-            style={{
-              fontSize: 34,
-              fontWeight: "bold",
-              lineHeight: 1.1,
-            }}
-          >
-            AgentYap
-          </div>
-
-          <div
-            style={{
-              fontSize: 18,
-              color: "#c4b5fd",
-              marginTop: 8,
-              lineHeight: 1.4,
-            }}
-          >
-            AI casts for Farcaster builders, creators, and Base natives.
-          </div>
-
-          <p
-            style={{
-              color: "#a1a1aa",
-              lineHeight: 1.7,
-              marginTop: 14,
-            }}
-          >
-            Turn rough ideas into ready-to-post Farcaster casts in seconds.
-            Choose your vibe, preview the cast, edit it, and post when you are
-            ready.
-          </p>
-
-          <p
-            style={{
-              color: "#71717a",
-              fontSize: 13,
-              lineHeight: 1.6,
-            }}
-          >
-            Built by <strong style={{ color: "#e0e0ff" }}>afifarioss</strong> —
-            an Ipoh dad building AgentYap in public on Base.
-          </p>
-        </header>
-
-        {error && (
-          <div
-            style={{
-              background: "#1a0e10",
-              border: "1px solid #ef4444",
-              color: "#fca5a5",
-              padding: "12px 16px",
-              borderRadius: 10,
-              marginBottom: 16,
-              fontSize: 14,
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        {/* 🔧 NEW — toast display, used by Recent Casts copy buttons */}
-        {toast && (
-          <div
-            style={{
-              background: "#0e1a12",
-              border: "1px solid #22c55e",
-              color: "#86efac",
-              padding: "12px 16px",
-              borderRadius: 10,
-              marginBottom: 16,
-              fontSize: 14,
-            }}
-          >
-            {toast}
-          </div>
-        )}
-
-        {step === "setup" && (
-          <>
-            <section
+          <header style={{ marginBottom: 24, paddingTop: 12 }}>
+            <div
               style={{
-                background: "#0b1120",
-                padding: 20,
-                borderRadius: 16,
-                marginBottom: 16,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                background: "#111827",
                 border: "1px solid #1f2937",
+                color: "#22c55e",
+                fontSize: 12,
+                padding: "6px 10px",
+                borderRadius: 999,
+                marginBottom: 14,
+              }}
+            >
+              GROK + NEYNAR • BUILT ON FARCASTER
+            </div>
+
+            <div
+              style={{
+                fontSize: 34,
+                fontWeight: "bold",
+                lineHeight: 1.1,
+              }}
+            >
+              AgentYap
+            </div>
+
+            <div
+              style={{
+                fontSize: 18,
+                color: "#c4b5fd",
+                marginTop: 8,
+                lineHeight: 1.4,
+              }}
+            >
+              AI casts for Farcaster builders, creators, and Base natives.
+            </div>
+
+            <p
+              style={{
+                color: "#a1a1aa",
+                lineHeight: 1.7,
+                marginTop: 14,
+              }}
+            >
+              Turn rough ideas into ready-to-post Farcaster casts in seconds.
+              Choose your vibe, preview the cast, edit it, and post when you are
+              ready.
+            </p>
+
+            <p
+              style={{
+                color: "#71717a",
+                fontSize: 13,
+                lineHeight: 1.6,
+              }}
+            >
+              Built by <strong style={{ color: "#e0e0ff" }}>afifarioss</strong> —
+              an Ipoh dad building AgentYap in public on Base.
+            </p>
+          </header>
+
+          {error && (
+            <div
+              style={{
+                background: "#1a0e10",
+                border: "1px solid #ef4444",
+                color: "#fca5a5",
+                padding: "12px 16px",
+                borderRadius: 10,
+                marginBottom: 16,
+                fontSize: 14,
+              }}
+            >
+              {error}
+            </div>
+          )}
+
+          {/* 🔧 NEW — toast display, used by Recent Casts copy buttons */}
+          {toast && (
+            <div
+              style={{
+                background: "#0e1a12",
+                border: "1px solid #22c55e",
+                color: "#86efac",
+                padding: "12px 16px",
+                borderRadius: 10,
+                marginBottom: 16,
+                fontSize: 14,
+              }}
+            >
+              {toast}
+            </div>
+          )}
+
+          {step === "setup" && (
+            <>
+              <section
+                style={{
+                  background: "#0b1120",
+                  padding: 20,
+                  borderRadius: 16,
+                  marginBottom: 16,
+                  border: "1px solid #1f2937",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#818cf8",
+                    marginBottom: 8,
+                    letterSpacing: 0.8,
+                  }}
+                >
+                  WHY AGENTYAP EXISTS
+                </div>
+
+                <p
+                  style={{
+                    color: "#d4d4d8",
+                    lineHeight: 1.7,
+                    margin: 0,
+                  }}
+                >
+                  Posting every day is hard. Sometimes your idea is messy.
+                  Sometimes you are tired after work, family, building, and life.
+                  AgentYap helps turn simple thoughts into clean Farcaster casts —
+                  without losing your voice.
+                </p>
+              </section>
+
+              <section
+                style={{
+                  background: "#0b1120",
+                  padding: 20,
+                  borderRadius: 16,
+                  marginBottom: 16,
+                  border: "1px solid #1f2937",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#818cf8",
+                    marginBottom: 10,
+                    letterSpacing: 0.8,
+                  }}
+                >
+                  WHAT YOU GET
+                </div>
+
+                <ul
+                  style={{
+                    color: "#a1a1aa",
+                    lineHeight: 1.8,
+                    paddingLeft: 20,
+                    margin: 0,
+                  }}
+                >
+                  <li>AI-written Farcaster casts in your chosen style</li>
+                  <li>Cast ideas for builders, creators, degens, and parents</li>
+                  <li>Preview and edit before posting</li>
+                  <li>Your own approved signer through Neynar</li>
+                  <li>AgentYap never holds your wallet keys</li>
+                  <li>You stay in control of every cast</li>
+                </ul>
+              </section>
+
+              <section
+                style={{
+                  background: "#0b1120",
+                  padding: 18,
+                  borderRadius: 16,
+                  marginBottom: 14,
+                  border: "1px solid #1f2937",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#818cf8",
+                    marginBottom: 6,
+                    letterSpacing: 0.8,
+                  }}
+                >
+                  FARCASTER HANDLE
+                </div>
+
+                <input
+                  value={handle}
+                  onChange={(e) => setHandle(e.target.value.replace("@", ""))}
+                  placeholder="afifarioss"
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    background: "#020617",
+                    color: "#fff",
+                    padding: 13,
+                    borderRadius: 10,
+                    border: "1px solid #1f2937",
+                    outline: "none",
+                  }}
+                />
+              </section>
+
+              <section
+                style={{
+                  background: "#0b1120",
+                  padding: 18,
+                  borderRadius: 16,
+                  marginBottom: 14,
+                  border: "1px solid #1f2937",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#818cf8",
+                    marginBottom: 8,
+                    letterSpacing: 0.8,
+                  }}
+                >
+                  CHOOSE YOUR VIBE
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: "#71717a",
+                    marginBottom: 12,
+                  }}
+                >
+                  Tap one to see a sample before signing in.
+                </div>
+
+                {VIBES.map((v) => (
+                  <div
+                    key={v.id}
+                    onClick={() => handleVibeSelect(v.id)}
+                    style={{
+                      padding: 14,
+                      background: vibe === v.id ? "#12231a" : "#020617",
+                      marginBottom: 10,
+                      borderRadius: 12,
+                      cursor: "pointer",
+                      border:
+                        vibe === v.id
+                          ? "1px solid #22c55e"
+                          : "1px solid #1f2937",
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: "#fff",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {v.label}
+                    </div>
+
+                    <div
+                      style={{
+                        color: "#a1a1aa",
+                        fontSize: 13,
+                        marginTop: 4,
+                      }}
+                    >
+                      {v.desc}
+                    </div>
+                  </div>
+                ))}
+
+                {vibe && (isSampleLoading || samplePost) && (
+                  <div
+                    style={{
+                      marginTop: 14,
+                      background: "#020617",
+                      borderLeft: "3px solid #22c55e",
+                      padding: 14,
+                      borderRadius: 10,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "#22c55e",
+                        marginBottom: 8,
+                        letterSpacing: 0.6,
+                      }}
+                    >
+                      SAMPLE CAST
+                    </div>
+
+                    {isSampleLoading ? (
+                      <div
+                        style={{
+                          color: "#71717a",
+                          fontSize: 14,
+                        }}
+                      >
+                        Writing a sample...
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          color: "#e0e0ff",
+                          fontSize: 14,
+                          lineHeight: 1.7,
+                          whiteSpace: "pre-wrap",
+                        }}
+                      >
+                        {samplePost}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </section>
+
+              <section
+                style={{
+                  background: "#0b1120",
+                  padding: 18,
+                  borderRadius: 16,
+                  marginBottom: 18,
+                  border: "1px solid #1f2937",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#818cf8",
+                    marginBottom: 6,
+                    letterSpacing: 0.8,
+                  }}
+                >
+                  BIO OR ROUGH IDEA
+                </div>
+
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Example: I'm building an AI tool for Farcaster creators."
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    background: "#020617",
+                    color: "#fff",
+                    padding: 13,
+                    borderRadius: 10,
+                    border: "1px solid #1f2937",
+                    minHeight: 96,
+                    outline: "none",
+                    resize: "vertical",
+                  }}
+                />
+
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#71717a",
+                    marginTop: 8,
+                  }}
+                >
+                  Drop a rough idea. AgentYap will clean it up into a
+                  Farcaster-ready cast.
+                </div>
+              </section>
+
+              <section
+                style={{
+                  background: "#0b1120",
+                  padding: 18,
+                  borderRadius: 16,
+                  marginBottom: 18,
+                  border: "1px solid #1f2937",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#818cf8",
+                    marginBottom: 8,
+                    letterSpacing: 0.8,
+                  }}
+                >
+                  YOUR ACCOUNT STAYS YOURS
+                </div>
+
+                <p
+                  style={{
+                    color: "#a1a1aa",
+                    lineHeight: 1.7,
+                    margin: 0,
+                  }}
+                >
+                  AgentYap uses a Farcaster signer through Neynar. You approve
+                  access, you can revoke it anytime, and AgentYap never holds your
+                  wallet keys. You preview and edit before posting.
+                </p>
+              </section>
+
+              {!isAuthenticated ? (
+                <div
+                  style={{
+                    textAlign: "center",
+                    marginBottom: 30,
+                  }}
+                >
+                  <div
+                    onClick={() =>
+                      track("signin_clicked", {
+                        vibe,
+                      })
+                    }
+                    style={{ marginBottom: 12 }}
+                  >
+                    <SignInButton />
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "#71717a",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    Sign in with Farcaster to generate and post your first cast.
+                    <br />
+                    Signing in automatically sets up your signer.
+                  </div>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    textAlign: "center",
+                    color: "#22c55e",
+                    padding: 14,
+                    background: "#052e16",
+                    border: "1px solid #14532d",
+                    borderRadius: 12,
+                  }}
+                >
+                  <div style={{ marginBottom: 10 }}>Setting up your signer...</div>
+
+                  <button
+                    onClick={connectFarcaster}
+                    style={{
+                      background: "#22c55e",
+                      color: "#000",
+                      padding: "10px 14px",
+                      borderRadius: 10,
+                      border: "none",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Continue setup
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {step === "signer" && (
+            <div
+              style={{
+                textAlign: "center",
+                padding: 28,
+                background: "#0b1120",
+                border: "1px solid #1f2937",
+                borderRadius: 16,
+                animation: "pulseGlow 2.4s ease-in-out infinite",
               }}
             >
               <div
                 style={{
-                  fontSize: 12,
-                  color: "#818cf8",
-                  marginBottom: 8,
-                  letterSpacing: 0.8,
+                  width: 46,
+                  height: 46,
+                  border: "3px solid #1f2937",
+                  borderTop: "3px solid #22c55e",
+                  borderRadius: "50%",
+                  margin: "0 auto 18px",
+                  animation: "spin 1s linear infinite",
+                }}
+              />
+
+              <div
+                style={{
+                  fontSize: 22,
+                  marginBottom: 10,
+                  fontWeight: "bold",
                 }}
               >
-                WHY AGENTYAP EXISTS
+                Approve your AgentYap signer
               </div>
 
               <p
                 style={{
-                  color: "#d4d4d8",
-                  lineHeight: 1.7,
-                  margin: 0,
-                }}
-              >
-                Posting every day is hard. Sometimes your idea is messy.
-                Sometimes you are tired after work, family, building, and life.
-                AgentYap helps turn simple thoughts into clean Farcaster casts —
-                without losing your voice.
-              </p>
-            </section>
-
-            <section
-              style={{
-                background: "#0b1120",
-                padding: 20,
-                borderRadius: 16,
-                marginBottom: 16,
-                border: "1px solid #1f2937",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#818cf8",
-                  marginBottom: 10,
-                  letterSpacing: 0.8,
-                }}
-              >
-                WHAT YOU GET
-              </div>
-
-              <ul
-                style={{
                   color: "#a1a1aa",
-                  lineHeight: 1.8,
-                  paddingLeft: 20,
-                  margin: 0,
+                  fontSize: 14,
+                  lineHeight: 1.7,
+                  marginBottom: 16,
                 }}
               >
-                <li>AI-written Farcaster casts in your chosen style</li>
-                <li>Cast ideas for builders, creators, degens, and parents</li>
-                <li>Preview and edit before posting</li>
-                <li>Your own approved signer through Neynar</li>
-                <li>AgentYap never holds your wallet keys</li>
-                <li>You stay in control of every cast</li>
-              </ul>
-            </section>
+                This signer lets AgentYap publish casts you generate and confirm.
+                Your wallet keys stay yours.
+              </p>
 
-            <section
-              style={{
-                background: "#0b1120",
-                padding: 18,
-                borderRadius: 16,
-                marginBottom: 14,
-                border: "1px solid #1f2937",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#818cf8",
-                  marginBottom: 6,
-                  letterSpacing: 0.8,
-                }}
-              >
-                FARCASTER HANDLE
-              </div>
-
-              <input
-                value={handle}
-                onChange={(e) => setHandle(e.target.value.replace("@", ""))}
-                placeholder="afifarioss"
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  background: "#020617",
-                  color: "#fff",
-                  padding: 13,
-                  borderRadius: 10,
-                  border: "1px solid #1f2937",
-                  outline: "none",
-                }}
-              />
-            </section>
-
-            <section
-              style={{
-                background: "#0b1120",
-                padding: 18,
-                borderRadius: 16,
-                marginBottom: 14,
-                border: "1px solid #1f2937",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#818cf8",
-                  marginBottom: 8,
-                  letterSpacing: 0.8,
-                }}
-              >
-                CHOOSE YOUR VIBE
-              </div>
-
-              <div
-                style={{
-                  fontSize: 13,
-                  color: "#71717a",
-                  marginBottom: 12,
-                }}
-              >
-                Tap one to see a sample before signing in.
-              </div>
-
-              {VIBES.map((v) => (
-                <div
-                  key={v.id}
-                  onClick={() => handleVibeSelect(v.id)}
-                  style={{
-                    padding: 14,
-                    background: vibe === v.id ? "#12231a" : "#020617",
-                    marginBottom: 10,
-                    borderRadius: 12,
-                    cursor: "pointer",
-                    border:
-                      vibe === v.id
-                        ? "1px solid #22c55e"
-                        : "1px solid #1f2937",
-                  }}
-                >
-                  <div
+              {signerStatus === "pending" && (
+                <div>
+                  <a
+                    href={signerApprovalUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() =>
+                      track("signer_approval_clicked", {
+                        signerUuid,
+                      })
+                    }
                     style={{
+                      display: "block",
+                      background: "#6366f1",
                       color: "#fff",
+                      padding: 16,
+                      borderRadius: 12,
+                      margin: "18px 0",
+                      textDecoration: "none",
                       fontWeight: "bold",
                     }}
                   >
-                    {v.label}
-                  </div>
+                    Open Farcaster approval →
+                  </a>
 
                   <div
                     style={{
-                      color: "#a1a1aa",
-                      fontSize: 13,
-                      marginTop: 4,
+                      background: "#020617",
+                      border: "1px solid #1f2937",
+                      borderRadius: 12,
+                      padding: 14,
+                      marginTop: 14,
                     }}
                   >
-                    {v.desc}
-                  </div>
-                </div>
-              ))}
+                    <p
+                      style={{
+                        fontSize: 14,
+                        color: "#22c55e",
+                        margin: 0,
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {signerMessage}
+                    </p>
 
-              {vibe && (isSampleLoading || samplePost) && (
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "#71717a",
+                        marginTop: 6,
+                      }}
+                    >
+                      Checking approval status... {pollSeconds}s
+                    </div>
+                  </div>
+
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: "#71717a",
+                      marginTop: 14,
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    After approving in Farcaster, return to this tab. AgentYap
+                    will move forward automatically.
+                  </p>
+
+                  {pollSeconds >= 20 && (
+                    <button
+                      onClick={retryConnect}
+                      style={{
+                        background: "#1f2937",
+                        color: "#fff",
+                        padding: "10px 14px",
+                        borderRadius: 10,
+                        border: "1px solid #374151",
+                        cursor: "pointer",
+                        marginTop: 8,
+                      }}
+                    >
+                      Still stuck? Try again
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {signerStatus === "timeout" && (
+                <div>
+                  <p
+                    style={{
+                      color: "#f59e0b",
+                      fontSize: 16,
+                      marginBottom: 16,
+                    }}
+                  >
+                    Signer approval took too long. No worries — you can restart
+                    the approval flow.
+                  </p>
+
+                  <button
+                    onClick={retryConnect}
+                    style={{
+                      background: "#6366f1",
+                      color: "#fff",
+                      padding: "14px 24px",
+                      borderRadius: 10,
+                      fontWeight: "bold",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Restart signer setup
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === "dashboard" && (
+            <div>
+              <section
+                style={{
+                  background: "#0b1120",
+                  padding: 20,
+                  borderRadius: 16,
+                  marginBottom: 16,
+                  border: "1px solid #1f2937",
+                }}
+              >
                 <div
                   style={{
-                    marginTop: 14,
+                    fontSize: 22,
+                    fontWeight: "bold",
+                    marginBottom: 6,
+                  }}
+                >
+                  Your AgentYap workspace
+                </div>
+
+                <p
+                  style={{
+                    color: "#a1a1aa",
+                    lineHeight: 1.7,
+                    marginTop: 0,
+                  }}
+                >
+                  Pick your vibe, update your rough idea, generate a cast, then
+                  post when it sounds like you.
+                </p>
+
+                <div
+                  style={{
                     background: "#020617",
-                    borderLeft: "3px solid #22c55e",
+                    border: "1px solid #1f2937",
+                    borderRadius: 12,
                     padding: 14,
-                    borderRadius: 10,
+                    marginBottom: 14,
                   }}
                 >
                   <div
@@ -837,636 +1225,231 @@ export default function AgentYap() {
                       letterSpacing: 0.6,
                     }}
                   >
-                    SAMPLE CAST
+                    CURRENT SETUP
                   </div>
 
-                  {isSampleLoading ? (
-                    <div
-                      style={{
-                        color: "#71717a",
-                        fontSize: 14,
-                      }}
-                    >
-                      Writing a sample...
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        color: "#e0e0ff",
-                        fontSize: 14,
-                        lineHeight: 1.7,
-                        whiteSpace: "pre-wrap",
-                      }}
-                    >
-                      {samplePost}
-                    </div>
-                  )}
-                </div>
-              )}
-            </section>
-
-            <section
-              style={{
-                background: "#0b1120",
-                padding: 18,
-                borderRadius: 16,
-                marginBottom: 18,
-                border: "1px solid #1f2937",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#818cf8",
-                  marginBottom: 6,
-                  letterSpacing: 0.8,
-                }}
-              >
-                BIO OR ROUGH IDEA
-              </div>
-
-              <textarea
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="Example: I'm building an AI tool for Farcaster creators."
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  background: "#020617",
-                  color: "#fff",
-                  padding: 13,
-                  borderRadius: 10,
-                  border: "1px solid #1f2937",
-                  minHeight: 96,
-                  outline: "none",
-                  resize: "vertical",
-                }}
-              />
-
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#71717a",
-                  marginTop: 8,
-                }}
-              >
-                Drop a rough idea. AgentYap will clean it up into a
-                Farcaster-ready cast.
-              </div>
-            </section>
-
-            <section
-              style={{
-                background: "#0b1120",
-                padding: 18,
-                borderRadius: 16,
-                marginBottom: 18,
-                border: "1px solid #1f2937",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#818cf8",
-                  marginBottom: 8,
-                  letterSpacing: 0.8,
-                }}
-              >
-                YOUR ACCOUNT STAYS YOURS
-              </div>
-
-              <p
-                style={{
-                  color: "#a1a1aa",
-                  lineHeight: 1.7,
-                  margin: 0,
-                }}
-              >
-                AgentYap uses a Farcaster signer through Neynar. You approve
-                access, you can revoke it anytime, and AgentYap never holds your
-                wallet keys. You preview and edit before posting.
-              </p>
-            </section>
-
-            {!isAuthenticated ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  marginBottom: 30,
-                }}
-              >
-                <div
-                  onClick={() =>
-                    track("signin_clicked", {
-                      vibe,
-                    })
-                  }
-                  style={{ marginBottom: 12 }}
-                >
-                  <SignInButton />
+                  <div
+                    style={{
+                      color: "#e0e0ff",
+                      fontSize: 14,
+                      lineHeight: 1.7,
+                    }}
+                  >
+                    Vibe:{" "}
+                    <strong>{selectedVibe?.label || "Not selected"}</strong>
+                    <br />
+                    Handle: <strong>@{profile?.username || handle}</strong>
+                  </div>
                 </div>
 
                 <div
                   style={{
                     fontSize: 12,
-                    color: "#71717a",
-                    lineHeight: 1.6,
+                    color: "#818cf8",
+                    marginBottom: 6,
+                    letterSpacing: 0.8,
                   }}
                 >
-                  Sign in with Farcaster to generate and post your first cast.
-                  <br />
-                  Signing in automatically sets up your signer.
+                  WHAT SHOULD AGENTYAP WRITE ABOUT?
                 </div>
-              </div>
-            ) : (
-              <div
-                style={{
-                  textAlign: "center",
-                  color: "#22c55e",
-                  padding: 14,
-                  background: "#052e16",
-                  border: "1px solid #14532d",
-                  borderRadius: 12,
-                }}
-              >
-                <div style={{ marginBottom: 10 }}>Setting up your signer...</div>
 
-                <button
-                  onClick={connectFarcaster}
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="What are you building, learning, or thinking about today?"
                   style={{
-                    background: "#22c55e",
-                    color: "#000",
-                    padding: "10px 14px",
-                    borderRadius: 10,
-                    border: "none",
-                    fontWeight: "bold",
-                    cursor: "pointer",
-                  }}
-                >
-                  Continue setup
-                </button>
-              </div>
-            )}
-          </>
-        )}
-
-        {step === "signer" && (
-          <div
-            style={{
-              textAlign: "center",
-              padding: 28,
-              background: "#0b1120",
-              border: "1px solid #1f2937",
-              borderRadius: 16,
-              animation: "pulseGlow 2.4s ease-in-out infinite",
-            }}
-          >
-            <div
-              style={{
-                width: 46,
-                height: 46,
-                border: "3px solid #1f2937",
-                borderTop: "3px solid #22c55e",
-                borderRadius: "50%",
-                margin: "0 auto 18px",
-                animation: "spin 1s linear infinite",
-              }}
-            />
-
-            <div
-              style={{
-                fontSize: 22,
-                marginBottom: 10,
-                fontWeight: "bold",
-              }}
-            >
-              Approve your AgentYap signer
-            </div>
-
-            <p
-              style={{
-                color: "#a1a1aa",
-                fontSize: 14,
-                lineHeight: 1.7,
-                marginBottom: 16,
-              }}
-            >
-              This signer lets AgentYap publish casts you generate and confirm.
-              Your wallet keys stay yours.
-            </p>
-
-            {signerStatus === "pending" && (
-              <div>
-                <a
-                  href={signerApprovalUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() =>
-                    track("signer_approval_clicked", {
-                      signerUuid,
-                    })
-                  }
-                  style={{
-                    display: "block",
-                    background: "#6366f1",
+                    width: "100%",
+                    boxSizing: "border-box",
+                    background: "#020617",
                     color: "#fff",
-                    padding: 16,
-                    borderRadius: 12,
-                    margin: "18px 0",
-                    textDecoration: "none",
-                    fontWeight: "bold",
+                    padding: 13,
+                    borderRadius: 10,
+                    border: "1px solid #1f2937",
+                    minHeight: 96,
+                    outline: "none",
+                    resize: "vertical",
+                    marginBottom: 14,
                   }}
-                >
-                  Open Farcaster approval →
-                </a>
+                />
 
                 <div
                   style={{
-                    background: "#020617",
-                    border: "1px solid #1f2937",
-                    borderRadius: 12,
-                    padding: 14,
-                    marginTop: 14,
+                    display: "grid",
+                    gap: 8,
+                    marginBottom: 14,
                   }}
                 >
-                  <p
-                    style={{
-                      fontSize: 14,
-                      color: "#22c55e",
-                      margin: 0,
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    {signerMessage}
-                  </p>
-
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "#71717a",
-                      marginTop: 6,
-                    }}
-                  >
-                    Checking approval status... {pollSeconds}s
-                  </div>
+                  {PROMPT_IDEAS.map((idea) => (
+                    <button
+                      key={idea}
+                      onClick={() => setBio(idea)}
+                      style={{
+                        textAlign: "left",
+                        background: "#020617",
+                        color: "#a1a1aa",
+                        border: "1px solid #1f2937",
+                        borderRadius: 10,
+                        padding: 10,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {idea}
+                    </button>
+                  ))}
                 </div>
 
-                <p
+                <div
                   style={{
-                    fontSize: 13,
-                    color: "#71717a",
-                    marginTop: 14,
-                    lineHeight: 1.6,
+                    display: "flex",
+                    gap: 8,
+                    flexWrap: "wrap",
                   }}
                 >
-                  After approving in Farcaster, return to this tab. AgentYap
-                  will move forward automatically.
-                </p>
-
-                {pollSeconds >= 20 && (
                   <button
-                    onClick={retryConnect}
+                    onClick={handlePreview}
+                    disabled={isPreviewLoading}
                     style={{
                       background: "#1f2937",
                       color: "#fff",
-                      padding: "10px 14px",
+                      padding: "12px 16px",
                       borderRadius: 10,
                       border: "1px solid #374151",
-                      cursor: "pointer",
-                      marginTop: 8,
+                      cursor: isPreviewLoading ? "not-allowed" : "pointer",
                     }}
                   >
-                    Still stuck? Try again
+                    {isPreviewLoading ? "Generating..." : "Generate preview"}
                   </button>
-                )}
-              </div>
-            )}
 
-            {signerStatus === "timeout" && (
-              <div>
-                <p
-                  style={{
-                    color: "#f59e0b",
-                    fontSize: 16,
-                    marginBottom: 16,
-                  }}
-                >
-                  Signer approval took too long. No worries — you can restart
-                  the approval flow.
-                </p>
-
-                <button
-                  onClick={retryConnect}
-                  style={{
-                    background: "#6366f1",
-                    color: "#fff",
-                    padding: "14px 24px",
-                    borderRadius: 10,
-                    fontWeight: "bold",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  Restart signer setup
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {step === "dashboard" && (
-          <div>
-            <section
-              style={{
-                background: "#0b1120",
-                padding: 20,
-                borderRadius: 16,
-                marginBottom: 16,
-                border: "1px solid #1f2937",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 22,
-                  fontWeight: "bold",
-                  marginBottom: 6,
-                }}
-              >
-                Your AgentYap workspace
-              </div>
-
-              <p
-                style={{
-                  color: "#a1a1aa",
-                  lineHeight: 1.7,
-                  marginTop: 0,
-                }}
-              >
-                Pick your vibe, update your rough idea, generate a cast, then
-                post when it sounds like you.
-              </p>
-
-              <div
-                style={{
-                  background: "#020617",
-                  border: "1px solid #1f2937",
-                  borderRadius: 12,
-                  padding: 14,
-                  marginBottom: 14,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: "#22c55e",
-                    marginBottom: 8,
-                    letterSpacing: 0.6,
-                  }}
-                >
-                  CURRENT SETUP
+                  <button
+                    onClick={handlePost}
+                    disabled={isPosting}
+                    style={{
+                      background: isPosting ? "#444" : "#22c55e",
+                      color: "#000",
+                      padding: "12px 16px",
+                      borderRadius: 10,
+                      border: "none",
+                      fontWeight: "bold",
+                      cursor: isPosting ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    {isPosting ? "Posting..." : "Post to Farcaster"}
+                  </button>
                 </div>
+              </section>
 
-                <div
+              {preview && (
+                <section
                   style={{
-                    color: "#e0e0ff",
-                    fontSize: 14,
+                    background: "#020617",
+                    padding: 16,
+                    marginTop: 12,
+                    borderRadius: 12,
+                    whiteSpace: "pre-wrap",
+                    border: "1px solid #1f2937",
                     lineHeight: 1.7,
                   }}
                 >
-                  Vibe:{" "}
-                  <strong>{selectedVibe?.label || "Not selected"}</strong>
-                  <br />
-                  Handle: <strong>@{profile?.username || handle}</strong>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#818cf8",
-                  marginBottom: 6,
-                  letterSpacing: 0.8,
-                }}
-              >
-                WHAT SHOULD AGENTYAP WRITE ABOUT?
-              </div>
-
-              <textarea
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="What are you building, learning, or thinking about today?"
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  background: "#020617",
-                  color: "#fff",
-                  padding: 13,
-                  borderRadius: 10,
-                  border: "1px solid #1f2937",
-                  minHeight: 96,
-                  outline: "none",
-                  resize: "vertical",
-                  marginBottom: 14,
-                }}
-              />
-
-              <div
-                style={{
-                  display: "grid",
-                  gap: 8,
-                  marginBottom: 14,
-                }}
-              >
-                {PROMPT_IDEAS.map((idea) => (
-                  <button
-                    key={idea}
-                    onClick={() => setBio(idea)}
+                  <div
                     style={{
-                      textAlign: "left",
-                      background: "#020617",
-                      color: "#a1a1aa",
-                      border: "1px solid #1f2937",
-                      borderRadius: 10,
-                      padding: 10,
-                      cursor: "pointer",
+                      fontSize: 11,
+                      color: "#22c55e",
+                      marginBottom: 8,
+                      letterSpacing: 0.6,
                     }}
                   >
-                    {idea}
-                  </button>
-                ))}
-              </div>
+                    PREVIEW
+                  </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                <button
-                  onClick={handlePreview}
-                  disabled={isPreviewLoading}
-                  style={{
-                    background: "#1f2937",
-                    color: "#fff",
-                    padding: "12px 16px",
-                    borderRadius: 10,
-                    border: "1px solid #374151",
-                    cursor: isPreviewLoading ? "not-allowed" : "pointer",
-                  }}
-                >
-                  {isPreviewLoading ? "Generating..." : "Generate preview"}
-                </button>
+                  {preview}
+                </section>
+              )}
 
-                <button
-                  onClick={handlePost}
-                  disabled={isPosting}
-                  style={{
-                    background: isPosting ? "#444" : "#22c55e",
-                    color: "#000",
-                    padding: "12px 16px",
-                    borderRadius: 10,
-                    border: "none",
-                    fontWeight: "bold",
-                    cursor: isPosting ? "not-allowed" : "pointer",
-                  }}
-                >
-                  {isPosting ? "Posting..." : "Post to Farcaster"}
-                </button>
-              </div>
-            </section>
-
-            {preview && (
-              <section
-                style={{
-                  background: "#020617",
-                  padding: 16,
-                  marginTop: 12,
-                  borderRadius: 12,
-                  whiteSpace: "pre-wrap",
-                  border: "1px solid #1f2937",
-                  lineHeight: 1.7,
-                }}
-              >
+              {/* 🔧 UPDATED — Recent Casts section, addressing jesseXBT's
+                  feedback across multiple rounds:
+                  1. Numbered badge per post (batch distinguishability)
+                  2. borderTop added so consecutive cards feel separated
+                  3. Per-post Copy (strips marker) + Copy+🟦 (keeps
+                     attribution, only shown if the post actually has the
+                     marker) + Delete actions
+                  4. Empty state instead of rendering nothing
+                  5. Delete + React key now use stable post.id, not array
+                     index — fixes the real bug risk index-based deletion
+                     created
+                  6. "Posted" label is honest that this is a client-side
+                     timestamp, not pulled from Farcaster's API */}
+              <section style={{ marginTop: 24 }}>
                 <div
                   style={{
-                    fontSize: 11,
-                    color: "#22c55e",
-                    marginBottom: 8,
-                    letterSpacing: 0.6,
-                  }}
-                >
-                  PREVIEW
-                </div>
-
-                {preview}
-              </section>
-            )}
-
-            {/* 🔧 UPDATED — Recent Casts section, addressing jesseXBT's
-                feedback across multiple rounds:
-                1. Numbered badge per post (batch distinguishability)
-                2. borderTop added so consecutive cards feel separated
-                3. Per-post Copy (strips marker) + Copy+🟦 (keeps
-                   attribution, only shown if the post actually has the
-                   marker) + Delete actions
-                4. Empty state instead of rendering nothing
-                5. Delete + React key now use stable post.id, not array
-                   index — fixes the real bug risk index-based deletion
-                   created
-                6. "Posted" label is honest that this is a client-side
-                   timestamp, not pulled from Farcaster's API */}
-            <section style={{ marginTop: 24 }}>
-              <div
-                style={{
-                  fontSize: 13,
-                  color: "#888",
-                  marginBottom: 8,
-                }}
-              >
-                Recent Casts
-              </div>
-
-              {posts.length === 0 ? (
-                <div
-                  style={{
-                    background: "#0b1120",
-                    border: "1px solid #1f2937",
-                    borderRadius: 12,
-                    padding: 18,
-                    color: "#52525b",
                     fontSize: 13,
-                    textAlign: "center",
+                    color: "#888",
+                    marginBottom: 8,
                   }}
                 >
-                  No posts yet — generate a cast above and post your first
-                  one.
+                  Recent Casts
                 </div>
-              ) : (
-                posts.map((p, i) => (
+
+                {posts.length === 0 ? (
                   <div
-                    key={p.id}
                     style={{
                       background: "#0b1120",
-                      padding: 14,
-                      borderRadius: 12,
-                      marginBottom: 10,
                       border: "1px solid #1f2937",
-                      borderTop: "1px solid #2d3748",
+                      borderRadius: 12,
+                      padding: 18,
+                      color: "#52525b",
+                      fontSize: 13,
+                      textAlign: "center",
                     }}
                   >
+                    No posts yet — generate a cast above and post your first
+                    one.
+                  </div>
+                ) : (
+                  posts.map((p, i) => (
                     <div
+                      key={p.id}
                       style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginBottom: 8,
+                        background: "#0b1120",
+                        padding: 14,
+                        borderRadius: 12,
+                        marginBottom: 10,
+                        border: "1px solid #1f2937",
+                        borderTop: "1px solid #2d3748",
                       }}
                     >
                       <div
                         style={{
-                          display: "inline-flex",
+                          display: "flex",
+                          justifyContent: "space-between",
                           alignItems: "center",
-                          justifyContent: "center",
-                          width: 22,
-                          height: 22,
-                          borderRadius: "50%",
-                          background: "#1f2937",
-                          color: "#a1a1aa",
-                          fontSize: 11,
-                          fontWeight: "bold",
+                          marginBottom: 8,
                         }}
                       >
-                        {posts.length - i}
-                      </div>
-
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <button
-                          onClick={() => {
-                            const cleanText = p.text
-                              .replace(/^🟦\s*AgentYap:\s*/i, "")
-                              .trim();
-                            navigator.clipboard.writeText(cleanText);
-                            setToast("Copied (text only)");
-                          }}
+                        <div
                           style={{
-                            background: "transparent",
-                            color: "#71717a",
-                            border: "1px solid #1f2937",
-                            borderRadius: 8,
-                            padding: "4px 10px",
-                            fontSize: 12,
-                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 22,
+                            height: 22,
+                            borderRadius: "50%",
+                            background: "#1f2937",
+                            color: "#a1a1aa",
+                            fontSize: 11,
+                            fontWeight: "bold",
                           }}
                         >
-                          Copy
-                        </button>
+                          {posts.length - i}
+                        </div>
 
-                        {p.text.startsWith("🟦") && (
+                        <div style={{ display: "flex", gap: 6 }}>
                           <button
                             onClick={() => {
-                              navigator.clipboard.writeText(p.text);
-                              setToast("Copied (with attribution)");
+                              const cleanText = p.text
+                                .replace(/^🟦\s*AgentYap:\s*/i, "")
+                                .trim();
+                              navigator.clipboard.writeText(cleanText);
+                              setToast("Copied (text only)");
                             }}
                             style={{
                               background: "transparent",
@@ -1478,71 +1461,91 @@ export default function AgentYap() {
                               cursor: "pointer",
                             }}
                           >
-                            Copy + 🟦
+                            Copy
                           </button>
-                        )}
 
-                        <button
-                          onClick={() => {
-                            setPosts((current) =>
-                              current.filter((post) => post.id !== p.id)
-                            );
-                          }}
-                          style={{
-                            background: "transparent",
-                            color: "#71717a",
-                            border: "1px solid #1f2937",
-                            borderRadius: 8,
-                            padding: "4px 10px",
-                            fontSize: 12,
-                            cursor: "pointer",
-                          }}
-                        >
-                          Delete
-                        </button>
+                          {p.text.startsWith("🟦") && (
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(p.text);
+                                setToast("Copied (with attribution)");
+                              }}
+                              style={{
+                                background: "transparent",
+                                color: "#71717a",
+                                border: "1px solid #1f2937",
+                                borderRadius: 8,
+                                padding: "4px 10px",
+                                fontSize: 12,
+                                cursor: "pointer",
+                              }}
+                            >
+                              Copy + 🟦
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => {
+                              setPosts((current) =>
+                                current.filter((post) => post.id !== p.id)
+                              );
+                            }}
+                            style={{
+                              background: "transparent",
+                              color: "#71717a",
+                              border: "1px solid #1f2937",
+                              borderRadius: 8,
+                              padding: "4px 10px",
+                              fontSize: 12,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          whiteSpace: "pre-wrap",
+                          lineHeight: 1.7,
+                        }}
+                      >
+                        {p.text}
+                      </div>
+
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: "#666",
+                          marginTop: 6,
+                        }}
+                      >
+                        Posted {p.time}
                       </div>
                     </div>
+                  ))
+                )}
+              </section>
+            </div>
+          )}
 
-                    <div
-                      style={{
-                        whiteSpace: "pre-wrap",
-                        lineHeight: 1.7,
-                      }}
-                    >
-                      {p.text}
-                    </div>
-
-                    <div
-                      style={{
-                        fontSize: 11,
-                        color: "#666",
-                        marginTop: 6,
-                      }}
-                    >
-                      Posted {p.time}
-                    </div>
-                  </div>
-                ))
-              )}
-            </section>
-          </div>
-        )}
-
-        <footer
-          style={{
-            marginTop: 32,
-            padding: "20px 0",
-            color: "#52525b",
-            fontSize: 12,
-            textAlign: "center",
-            lineHeight: 1.6,
-          }}
-        >
-          Built by afifarioss • Dad with 3 kids building in public on Base
-          <br />
-          Powered by Grok + Neynar
-        </footer>
+          <footer
+            style={{
+              marginTop: 32,
+              padding: "20px 0",
+              color: "#52525b",
+              fontSize: 12,
+              textAlign: "center",
+              lineHeight: 1.6,
+            }}
+          >
+            Built by afifarioss • Dad with 3 kids building in public on Base
+            <br />
+            Powered By AI + Neynar
+          </footer>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
