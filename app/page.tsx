@@ -87,7 +87,6 @@ export default function AgentYap() {
   const latestVibeRef = useRef<string | null>(null);
 
   const [error, setError] = useState<string | null>(null);
-
   const [toast, setToast] = useState<string | null>(null);
 
   const [signerStatus, setSignerStatus] = useState<SignerStatus>("idle");
@@ -120,14 +119,12 @@ export default function AgentYap() {
 
   useEffect(() => {
     if (!error) return;
-
     const timeout = setTimeout(() => setError(null), 8000);
     return () => clearTimeout(timeout);
   }, [error]);
 
   useEffect(() => {
     if (!toast) return;
-
     const timeout = setTimeout(() => setToast(null), 4000);
     return () => clearTimeout(timeout);
   }, [toast]);
@@ -252,9 +249,7 @@ export default function AgentYap() {
     try {
       const res = await fetch("/api/create-signer", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fid: profile.fid,
           username: profile.username || handle,
@@ -267,7 +262,6 @@ export default function AgentYap() {
         throw new Error(data.error || "Could not create signer");
       }
 
-      // 🔧 FIX — handle demo mode (Neynar 402 / no credits)
       if (data.demo === true) {
         setError(
           "Demo mode — Neynar API credits required to publish casts. You can still generate and preview casts below. Tap a vibe to try it out!"
@@ -289,35 +283,25 @@ export default function AgentYap() {
     } catch (e: any) {
       setError(e.message || "Something went wrong creating your signer.");
       autoConnectFiredRef.current = false;
-
-      track("signer_create_error", {
-        message: e.message,
-      });
+      track("signer_create_error", { message: e.message });
     }
   }
 
   function retryConnect() {
     track("signer_retry_clicked");
-
     setSignerStatus("idle");
     setSignerApprovalUrl("");
     setSignerUuid("");
     setPollSeconds(0);
     autoConnectFiredRef.current = false;
     setStep("setup");
-
-    setTimeout(() => {
-      connectFarcaster();
-    }, 0);
+    setTimeout(() => { connectFarcaster(); }, 0);
   }
 
   async function handleVibeSelect(vibeId: string) {
     setVibe(vibeId);
     latestVibeRef.current = vibeId;
-
-    track("vibe_selected", {
-      vibe: vibeId,
-    });
+    track("vibe_selected", { vibe: vibeId });
 
     if (sampleCacheRef.current[vibeId]) {
       setSamplePost(sampleCacheRef.current[vibeId]);
@@ -330,14 +314,8 @@ export default function AgentYap() {
     try {
       const res = await fetch("/api/sample-post", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          vibe: vibeId,
-          handle,
-          bio,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vibe: vibeId, handle, bio }),
       });
 
       const data = await res.json();
@@ -350,21 +328,12 @@ export default function AgentYap() {
 
       sampleCacheRef.current[vibeId] = data.text;
       setSamplePost(data.text);
-
-      track("sample_generated", {
-        vibe: vibeId,
-      });
+      track("sample_generated", { vibe: vibeId });
     } catch (e: any) {
       if (latestVibeRef.current === vibeId) {
-        setSamplePost(
-          "⚠️ Could not load a sample right now — try tapping again."
-        );
+        setSamplePost("⚠️ Could not load a sample right now — try tapping again.");
       }
-
-      track("sample_error", {
-        vibe: vibeId,
-        message: e.message,
-      });
+      track("sample_error", { vibe: vibeId, message: e.message });
     } finally {
       if (latestVibeRef.current === vibeId) {
         setIsSampleLoading(false);
@@ -373,24 +342,16 @@ export default function AgentYap() {
   }
 
   async function handlePreview() {
-    if (!vibe) {
-      setError("Pick a vibe first.");
-      return;
-    }
+    if (!vibe) { setError("Pick a vibe first."); return; }
 
     setError(null);
     setIsPreviewLoading(true);
-
-    track("preview_started", {
-      vibe,
-    });
+    track("preview_started", { vibe });
 
     try {
       const res = await fetch("/api/generate-post", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           vibe,
           handle: profile?.username || handle,
@@ -405,39 +366,22 @@ export default function AgentYap() {
       }
 
       setPreview(data.text);
-
-      track("preview_generated", {
-        vibe,
-      });
+      track("preview_generated", { vibe });
     } catch (e: any) {
       setError(e.message || "Could not generate preview.");
-
-      track("preview_error", {
-        vibe,
-        message: e.message,
-      });
+      track("preview_error", { vibe, message: e.message });
     } finally {
       setIsPreviewLoading(false);
     }
   }
 
   async function handlePost() {
-    if (!signerUuid) {
-      setError("Signer not ready — reconnect Farcaster.");
-      return;
-    }
-
-    if (!vibe) {
-      setError("Pick a vibe first.");
-      return;
-    }
+    if (!signerUuid) { setError("Signer not ready — reconnect Farcaster."); return; }
+    if (!vibe) { setError("Pick a vibe first."); return; }
 
     setError(null);
     setIsPosting(true);
-
-    track("post_started", {
-      vibe,
-    });
+    track("post_started", { vibe });
 
     try {
       let text = preview;
@@ -445,9 +389,7 @@ export default function AgentYap() {
       if (!text) {
         const genRes = await fetch("/api/generate-post", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             vibe,
             handle: profile?.username || handle,
@@ -466,13 +408,8 @@ export default function AgentYap() {
 
       const postRes = await fetch("/api/post-cast", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          signerUuid,
-          text,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ signerUuid, text }),
       });
 
       const postData = await postRes.json();
@@ -482,27 +419,15 @@ export default function AgentYap() {
       }
 
       setPosts((currentPosts) => [
-        {
-          id: makePostId(),
-          text,
-          time: new Date().toLocaleTimeString(),
-        },
+        { id: makePostId(), text, time: new Date().toLocaleTimeString() },
         ...currentPosts,
       ]);
 
       setPreview("");
-
-      track("cast_posted", {
-        vibe,
-        hash: postData.hash,
-      });
+      track("cast_posted", { vibe, hash: postData.hash });
     } catch (e: any) {
       setError(e.message || "Could not post that cast.");
-
-      track("post_error", {
-        vibe,
-        message: e.message,
-      });
+      track("post_error", { vibe, message: e.message });
     } finally {
       setIsPosting(false);
     }
@@ -510,7 +435,9 @@ export default function AgentYap() {
 
   return (
     <>
-      <meta name="base:app_id" 6a227586ab28df7fd2fc1616" />
+      <head>
+        <meta name="base:app_id" content="6a227586ab28df7fd2fc1616" />
+      </head>
       <div
         style={{
           minHeight: "100vh",
@@ -524,24 +451,13 @@ export default function AgentYap() {
         <div style={{ maxWidth: 640, margin: "0 auto" }}>
           <style jsx global>{`
             @keyframes spin {
-              from {
-                transform: rotate(0deg);
-              }
-              to {
-                transform: rotate(360deg);
-              }
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
             }
-
             @keyframes pulseGlow {
-              0% {
-                box-shadow: 0 0 0 rgba(34, 197, 94, 0);
-              }
-              50% {
-                box-shadow: 0 0 24px rgba(34, 197, 94, 0.18);
-              }
-              100% {
-                box-shadow: 0 0 0 rgba(34, 197, 94, 0);
-              }
+              0% { box-shadow: 0 0 0 rgba(34, 197, 94, 0); }
+              50% { box-shadow: 0 0 24px rgba(34, 197, 94, 0.18); }
+              100% { box-shadow: 0 0 0 rgba(34, 197, 94, 0); }
             }
           `}</style>
 
@@ -563,46 +479,20 @@ export default function AgentYap() {
               GROK + NEYNAR • BUILT ON FARCASTER
             </div>
 
-            <div
-              style={{
-                fontSize: 34,
-                fontWeight: "bold",
-                lineHeight: 1.1,
-              }}
-            >
+            <div style={{ fontSize: 34, fontWeight: "bold", lineHeight: 1.1 }}>
               AgentYap
             </div>
 
-            <div
-              style={{
-                fontSize: 18,
-                color: "#c4b5fd",
-                marginTop: 8,
-                lineHeight: 1.4,
-              }}
-            >
+            <div style={{ fontSize: 18, color: "#c4b5fd", marginTop: 8, lineHeight: 1.4 }}>
               AI casts for Farcaster builders, creators, and Base natives.
             </div>
 
-            <p
-              style={{
-                color: "#a1a1aa",
-                lineHeight: 1.7,
-                marginTop: 14,
-              }}
-            >
+            <p style={{ color: "#a1a1aa", lineHeight: 1.7, marginTop: 14 }}>
               Turn rough ideas into ready-to-post Farcaster casts in seconds.
-              Choose your vibe, preview the cast, edit it, and post when you are
-              ready.
+              Choose your vibe, preview the cast, edit it, and post when you are ready.
             </p>
 
-            <p
-              style={{
-                color: "#71717a",
-                fontSize: 13,
-                lineHeight: 1.6,
-              }}
-            >
+            <p style={{ color: "#71717a", fontSize: 13, lineHeight: 1.6 }}>
               Built by <strong style={{ color: "#e0e0ff" }}>afifarioss</strong> —
               an Ipoh dad building AgentYap in public on Base.
             </p>
@@ -651,24 +541,10 @@ export default function AgentYap() {
                   border: "1px solid #1f2937",
                 }}
               >
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "#818cf8",
-                    marginBottom: 8,
-                    letterSpacing: 0.8,
-                  }}
-                >
+                <div style={{ fontSize: 12, color: "#818cf8", marginBottom: 8, letterSpacing: 0.8 }}>
                   WHY AGENTYAP EXISTS
                 </div>
-
-                <p
-                  style={{
-                    color: "#d4d4d8",
-                    lineHeight: 1.7,
-                    margin: 0,
-                  }}
-                >
+                <p style={{ color: "#d4d4d8", lineHeight: 1.7, margin: 0 }}>
                   Posting every day is hard. Sometimes your idea is messy.
                   Sometimes you are tired after work, family, building, and life.
                   AgentYap helps turn simple thoughts into clean Farcaster casts —
@@ -685,25 +561,10 @@ export default function AgentYap() {
                   border: "1px solid #1f2937",
                 }}
               >
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "#818cf8",
-                    marginBottom: 10,
-                    letterSpacing: 0.8,
-                  }}
-                >
+                <div style={{ fontSize: 12, color: "#818cf8", marginBottom: 10, letterSpacing: 0.8 }}>
                   WHAT YOU GET
                 </div>
-
-                <ul
-                  style={{
-                    color: "#a1a1aa",
-                    lineHeight: 1.8,
-                    paddingLeft: 20,
-                    margin: 0,
-                  }}
-                >
+                <ul style={{ color: "#a1a1aa", lineHeight: 1.8, paddingLeft: 20, margin: 0 }}>
                   <li>AI-written Farcaster casts in your chosen style</li>
                   <li>Cast ideas for builders, creators, degens, and parents</li>
                   <li>Preview and edit before posting</li>
@@ -722,17 +583,9 @@ export default function AgentYap() {
                   border: "1px solid #1f2937",
                 }}
               >
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "#818cf8",
-                    marginBottom: 6,
-                    letterSpacing: 0.8,
-                  }}
-                >
+                <div style={{ fontSize: 12, color: "#818cf8", marginBottom: 6, letterSpacing: 0.8 }}>
                   FARCASTER HANDLE
                 </div>
-
                 <input
                   value={handle}
                   onChange={(e) => setHandle(e.target.value.replace("@", ""))}
@@ -759,24 +612,10 @@ export default function AgentYap() {
                   border: "1px solid #1f2937",
                 }}
               >
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "#818cf8",
-                    marginBottom: 8,
-                    letterSpacing: 0.8,
-                  }}
-                >
+                <div style={{ fontSize: 12, color: "#818cf8", marginBottom: 8, letterSpacing: 0.8 }}>
                   CHOOSE YOUR VIBE
                 </div>
-
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: "#71717a",
-                    marginBottom: 12,
-                  }}
-                >
+                <div style={{ fontSize: 13, color: "#71717a", marginBottom: 12 }}>
                   Tap one to see a sample before signing in.
                 </div>
 
@@ -790,30 +629,11 @@ export default function AgentYap() {
                       marginBottom: 10,
                       borderRadius: 12,
                       cursor: "pointer",
-                      border:
-                        vibe === v.id
-                          ? "1px solid #22c55e"
-                          : "1px solid #1f2937",
+                      border: vibe === v.id ? "1px solid #22c55e" : "1px solid #1f2937",
                     }}
                   >
-                    <div
-                      style={{
-                        color: "#fff",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {v.label}
-                    </div>
-
-                    <div
-                      style={{
-                        color: "#a1a1aa",
-                        fontSize: 13,
-                        marginTop: 4,
-                      }}
-                    >
-                      {v.desc}
-                    </div>
+                    <div style={{ color: "#fff", fontWeight: "bold" }}>{v.label}</div>
+                    <div style={{ color: "#a1a1aa", fontSize: 13, marginTop: 4 }}>{v.desc}</div>
                   </div>
                 ))}
 
@@ -827,35 +647,13 @@ export default function AgentYap() {
                       borderRadius: 10,
                     }}
                   >
-                    <div
-                      style={{
-                        fontSize: 11,
-                        color: "#22c55e",
-                        marginBottom: 8,
-                        letterSpacing: 0.6,
-                      }}
-                    >
+                    <div style={{ fontSize: 11, color: "#22c55e", marginBottom: 8, letterSpacing: 0.6 }}>
                       SAMPLE CAST
                     </div>
-
                     {isSampleLoading ? (
-                      <div
-                        style={{
-                          color: "#71717a",
-                          fontSize: 14,
-                        }}
-                      >
-                        Writing a sample...
-                      </div>
+                      <div style={{ color: "#71717a", fontSize: 14 }}>Writing a sample...</div>
                     ) : (
-                      <div
-                        style={{
-                          color: "#e0e0ff",
-                          fontSize: 14,
-                          lineHeight: 1.7,
-                          whiteSpace: "pre-wrap",
-                        }}
-                      >
+                      <div style={{ color: "#e0e0ff", fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
                         {samplePost}
                       </div>
                     )}
@@ -872,17 +670,9 @@ export default function AgentYap() {
                   border: "1px solid #1f2937",
                 }}
               >
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "#818cf8",
-                    marginBottom: 6,
-                    letterSpacing: 0.8,
-                  }}
-                >
+                <div style={{ fontSize: 12, color: "#818cf8", marginBottom: 6, letterSpacing: 0.8 }}>
                   BIO OR ROUGH IDEA
                 </div>
-
                 <textarea
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
@@ -900,16 +690,8 @@ export default function AgentYap() {
                     resize: "vertical",
                   }}
                 />
-
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "#71717a",
-                    marginTop: 8,
-                  }}
-                >
-                  Drop a rough idea. AgentYap will clean it up into a
-                  Farcaster-ready cast.
+                <div style={{ fontSize: 12, color: "#71717a", marginTop: 8 }}>
+                  Drop a rough idea. AgentYap will clean it up into a Farcaster-ready cast.
                 </div>
               </section>
 
@@ -922,24 +704,10 @@ export default function AgentYap() {
                   border: "1px solid #1f2937",
                 }}
               >
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "#818cf8",
-                    marginBottom: 8,
-                    letterSpacing: 0.8,
-                  }}
-                >
+                <div style={{ fontSize: 12, color: "#818cf8", marginBottom: 8, letterSpacing: 0.8 }}>
                   YOUR ACCOUNT STAYS YOURS
                 </div>
-
-                <p
-                  style={{
-                    color: "#a1a1aa",
-                    lineHeight: 1.7,
-                    margin: 0,
-                  }}
-                >
+                <p style={{ color: "#a1a1aa", lineHeight: 1.7, margin: 0 }}>
                   AgentYap uses a Farcaster signer through Neynar. You approve
                   access, you can revoke it anytime, and AgentYap never holds your
                   wallet keys. You preview and edit before posting.
@@ -947,30 +715,11 @@ export default function AgentYap() {
               </section>
 
               {!isAuthenticated ? (
-                <div
-                  style={{
-                    textAlign: "center",
-                    marginBottom: 30,
-                  }}
-                >
-                  <div
-                    onClick={() =>
-                      track("signin_clicked", {
-                        vibe,
-                      })
-                    }
-                    style={{ marginBottom: 12 }}
-                  >
+                <div style={{ textAlign: "center", marginBottom: 30 }}>
+                  <div onClick={() => track("signin_clicked", { vibe })} style={{ marginBottom: 12 }}>
                     <SignInButton />
                   </div>
-
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "#71717a",
-                      lineHeight: 1.6,
-                    }}
-                  >
+                  <div style={{ fontSize: 12, color: "#71717a", lineHeight: 1.6 }}>
                     Sign in with Farcaster to generate and post your first cast.
                     <br />
                     Signing in automatically sets up your signer.
@@ -988,7 +737,6 @@ export default function AgentYap() {
                   }}
                 >
                   <div style={{ marginBottom: 10 }}>Setting up your signer...</div>
-
                   <button
                     onClick={connectFarcaster}
                     style={{
@@ -1031,24 +779,11 @@ export default function AgentYap() {
                 }}
               />
 
-              <div
-                style={{
-                  fontSize: 22,
-                  marginBottom: 10,
-                  fontWeight: "bold",
-                }}
-              >
+              <div style={{ fontSize: 22, marginBottom: 10, fontWeight: "bold" }}>
                 Approve your AgentYap signer
               </div>
 
-              <p
-                style={{
-                  color: "#a1a1aa",
-                  fontSize: 14,
-                  lineHeight: 1.7,
-                  marginBottom: 16,
-                }}
-              >
+              <p style={{ color: "#a1a1aa", fontSize: 14, lineHeight: 1.7, marginBottom: 16 }}>
                 This signer lets AgentYap publish casts you generate and confirm.
                 Your wallet keys stay yours.
               </p>
@@ -1059,11 +794,7 @@ export default function AgentYap() {
                     href={signerApprovalUrl}
                     target="_blank"
                     rel="noreferrer"
-                    onClick={() =>
-                      track("signer_approval_clicked", {
-                        signerUuid,
-                      })
-                    }
+                    onClick={() => track("signer_approval_clicked", { signerUuid })}
                     style={{
                       display: "block",
                       background: "#6366f1",
@@ -1087,36 +818,15 @@ export default function AgentYap() {
                       marginTop: 14,
                     }}
                   >
-                    <p
-                      style={{
-                        fontSize: 14,
-                        color: "#22c55e",
-                        margin: 0,
-                        lineHeight: 1.6,
-                      }}
-                    >
+                    <p style={{ fontSize: 14, color: "#22c55e", margin: 0, lineHeight: 1.6 }}>
                       {signerMessage}
                     </p>
-
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "#71717a",
-                        marginTop: 6,
-                      }}
-                    >
+                    <div style={{ fontSize: 12, color: "#71717a", marginTop: 6 }}>
                       Checking approval status... {pollSeconds}s
                     </div>
                   </div>
 
-                  <p
-                    style={{
-                      fontSize: 13,
-                      color: "#71717a",
-                      marginTop: 14,
-                      lineHeight: 1.6,
-                    }}
-                  >
+                  <p style={{ fontSize: 13, color: "#71717a", marginTop: 14, lineHeight: 1.6 }}>
                     After approving in Farcaster, return to this tab. AgentYap
                     will move forward automatically.
                   </p>
@@ -1142,17 +852,9 @@ export default function AgentYap() {
 
               {signerStatus === "timeout" && (
                 <div>
-                  <p
-                    style={{
-                      color: "#f59e0b",
-                      fontSize: 16,
-                      marginBottom: 16,
-                    }}
-                  >
-                    Signer approval took too long. No worries — you can restart
-                    the approval flow.
+                  <p style={{ color: "#f59e0b", fontSize: 16, marginBottom: 16 }}>
+                    Signer approval took too long. No worries — you can restart the approval flow.
                   </p>
-
                   <button
                     onClick={retryConnect}
                     style={{
@@ -1183,23 +885,11 @@ export default function AgentYap() {
                   border: "1px solid #1f2937",
                 }}
               >
-                <div
-                  style={{
-                    fontSize: 22,
-                    fontWeight: "bold",
-                    marginBottom: 6,
-                  }}
-                >
+                <div style={{ fontSize: 22, fontWeight: "bold", marginBottom: 6 }}>
                   Your AgentYap workspace
                 </div>
 
-                <p
-                  style={{
-                    color: "#a1a1aa",
-                    lineHeight: 1.7,
-                    marginTop: 0,
-                  }}
-                >
+                <p style={{ color: "#a1a1aa", lineHeight: 1.7, marginTop: 0 }}>
                   Pick your vibe, update your rough idea, generate a cast, then
                   post when it sounds like you.
                 </p>
@@ -1213,39 +903,17 @@ export default function AgentYap() {
                     marginBottom: 14,
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: "#22c55e",
-                      marginBottom: 8,
-                      letterSpacing: 0.6,
-                    }}
-                  >
+                  <div style={{ fontSize: 11, color: "#22c55e", marginBottom: 8, letterSpacing: 0.6 }}>
                     CURRENT SETUP
                   </div>
-
-                  <div
-                    style={{
-                      color: "#e0e0ff",
-                      fontSize: 14,
-                      lineHeight: 1.7,
-                    }}
-                  >
-                    Vibe:{" "}
-                    <strong>{selectedVibe?.label || "Not selected"}</strong>
+                  <div style={{ color: "#e0e0ff", fontSize: 14, lineHeight: 1.7 }}>
+                    Vibe: <strong>{selectedVibe?.label || "Not selected"}</strong>
                     <br />
                     Handle: <strong>@{profile?.username || handle}</strong>
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "#818cf8",
-                    marginBottom: 6,
-                    letterSpacing: 0.8,
-                  }}
-                >
+                <div style={{ fontSize: 12, color: "#818cf8", marginBottom: 6, letterSpacing: 0.8 }}>
                   WHAT SHOULD AGENTYAP WRITE ABOUT?
                 </div>
 
@@ -1268,13 +936,7 @@ export default function AgentYap() {
                   }}
                 />
 
-                <div
-                  style={{
-                    display: "grid",
-                    gap: 8,
-                    marginBottom: 14,
-                  }}
-                >
+                <div style={{ display: "grid", gap: 8, marginBottom: 14 }}>
                   {PROMPT_IDEAS.map((idea) => (
                     <button
                       key={idea}
@@ -1294,13 +956,7 @@ export default function AgentYap() {
                   ))}
                 </div>
 
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
-                  }}
-                >
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <button
                     onClick={handlePreview}
                     disabled={isPreviewLoading}
@@ -1346,29 +1002,15 @@ export default function AgentYap() {
                     lineHeight: 1.7,
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: "#22c55e",
-                      marginBottom: 8,
-                      letterSpacing: 0.6,
-                    }}
-                  >
+                  <div style={{ fontSize: 11, color: "#22c55e", marginBottom: 8, letterSpacing: 0.6 }}>
                     PREVIEW
                   </div>
-
                   {preview}
                 </section>
               )}
 
               <section style={{ marginTop: 24 }}>
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: "#888",
-                    marginBottom: 8,
-                  }}
-                >
+                <div style={{ fontSize: 13, color: "#888", marginBottom: 8 }}>
                   Recent Casts
                 </div>
 
@@ -1384,8 +1026,7 @@ export default function AgentYap() {
                       textAlign: "center",
                     }}
                   >
-                    No posts yet — generate a cast above and post your first
-                    one.
+                    No posts yet — generate a cast above and post your first one.
                   </div>
                 ) : (
                   posts.map((p, i) => (
@@ -1488,22 +1129,11 @@ export default function AgentYap() {
                         </div>
                       </div>
 
-                      <div
-                        style={{
-                          whiteSpace: "pre-wrap",
-                          lineHeight: 1.7,
-                        }}
-                      >
+                      <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.7 }}>
                         {p.text}
                       </div>
 
-                      <div
-                        style={{
-                          fontSize: 11,
-                          color: "#666",
-                          marginTop: 6,
-                        }}
-                      >
+                      <div style={{ fontSize: 11, color: "#666", marginTop: 6 }}>
                         Posted {p.time}
                       </div>
                     </div>
