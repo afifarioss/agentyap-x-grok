@@ -510,7 +510,7 @@ export default function AgentYap() {
 
   return (
     <>
-      <meta name="base:app_id" content="6a063cf18c0a6aefceee8c57" />
+      <meta name="base:app_id" 6a227586ab28df7fd2fc1616" />
       <div
         style={{
           minHeight: "100vh",
