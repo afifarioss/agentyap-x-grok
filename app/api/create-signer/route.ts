@@ -109,7 +109,7 @@ export async function POST(): Promise<NextResponse<SignerResult>> {
     return NextResponse.json({
       mode: "neynar",
       signer_uuid: signedKey.signer_uuid,
-      approval_url: signedKey.signer_approval_url,
+      approval_url: signedKey.signer_approval_url ?? "",
       demo: false,
     });
   } catch (err: unknown) {
