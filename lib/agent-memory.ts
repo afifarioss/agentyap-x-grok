@@ -1,16 +1,4 @@
-// lib/agent-memory.ts
-import { Redis } from "@upstash/redis";
-
-let _redis: Redis | null = null;
-
-function getRedis(): Redis {
-  if (_redis) return _redis;
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) throw new Error("Upstash env vars missing");
-  _redis = new Redis({ url, token });
-  return _redis;
-}
+// lib/agent-memory.ts — in-memory fallback (no Redis dependency)
 
 export interface CastRecord {
   hash: string;
@@ -36,14 +24,6 @@ function todayUTC(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function memKey(fid: number): string {
-  return `agentyap:memory:${fid}`;
-}
-
-function castKey(fid: number): string {
-  return `agentyap:casts:${fid}`;
-}
-
 const EMPTY_MEMORY = (): AgentMemory => ({
   totalCasts: 0,
   agentCasts: 0,
@@ -54,16 +34,18 @@ const EMPTY_MEMORY = (): AgentMemory => ({
   recentCasts: [],
 });
 
+// In-memory store (resets on deploy, but build passes)
+const store = new Map<number, AgentMemory>();
+
 export async function getMemory(fid: number): Promise<AgentMemory> {
   try {
-    const redis = getRedis();
-    const data = await redis.get<AgentMemory>(memKey(fid));
+    const data = store.get(fid);
     if (!data) return EMPTY_MEMORY();
 
     if (data.dailyResetDate !== todayUTC()) {
       data.dailyCastCount = 0;
       data.dailyResetDate = todayUTC();
-      await redis.set(memKey(fid), data);
+      store.set(fid, data);
     }
     return data;
   } catch (err) {
@@ -77,7 +59,6 @@ export async function recordCast(
   cast: CastRecord
 ): Promise<void> {
   try {
-    const redis = getRedis();
     const memory = await getMemory(fid);
 
     memory.totalCasts += 1;
@@ -91,10 +72,7 @@ export async function recordCast(
     }
     memory.recentCasts = [cast, ...memory.recentCasts].slice(0, 20);
 
-    await redis.set(memKey(fid), memory);
-    await redis.lpush(castKey(fid), JSON.stringify(cast));
-    await redis.ltrim(castKey(fid), 0, 99);
-    await redis.expire(castKey(fid), 60 * 60 * 24 * 30);
+    store.set(fid, memory);
   } catch (err) {
     console.error("[agent-memory] recordCast:", err);
   }
