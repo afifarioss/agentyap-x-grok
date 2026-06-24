@@ -65,7 +65,7 @@ async function postViaHub(
   const res = await fetch(`${hubUrl}/v1/submitMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/octet-stream" },
-    body: messageBytes,
+    body: Buffer.from(messageBytes), // <-- FIXED: was messageBytes
     signal: AbortSignal.timeout(15_000),
   });
 
