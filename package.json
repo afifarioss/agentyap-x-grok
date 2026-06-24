@@ -12,6 +12,7 @@
   "dependencies": {
     "@ai-sdk/xai": "^1.2.9",
     "@farcaster/auth-kit": "0.8.2",
+    "@farcaster/hub-nodejs": "^0.11.0",
     "@neynar/nodejs-sdk": "^2.0.0",
     "@noble/curves": "^1.4.0",
     "@privy-io/react-auth": "^2.0.0",
