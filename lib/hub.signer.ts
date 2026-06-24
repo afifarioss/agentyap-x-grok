@@ -31,6 +31,7 @@ export async function signCastWithHubSigner(
     {
       
 
+
       embeds: embedUrls.map((url) => ({ url })),
       embedsDeprecated: [],
       mentions: [],
