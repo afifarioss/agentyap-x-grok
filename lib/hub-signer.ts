@@ -3,6 +3,7 @@ import {
   NobleEd25519Signer,
   makeCastAdd,
   FarcasterNetwork,
+  CastType,
   type CastAddMessage,
 } from "@farcaster/hub-nodejs";
 
@@ -32,6 +33,7 @@ export async function signCastWithHubSigner(
 
   const result = await makeCastAdd(
     {
+      type: CastType.TEXT, // <-- ADDED
       text,
       embeds: embedUrls.map((url) => ({ url })),
       embedsDeprecated: [],
