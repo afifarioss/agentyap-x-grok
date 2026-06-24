@@ -29,7 +29,7 @@ export async function signCastWithHubSigner(
 
   const result = await makeCastAdd(
     {
-      text,
+      
       embeds: embedUrls.map((url) => ({ url })),
       embedsDeprecated: [],
       mentions: [],
