@@ -1,8 +1,4 @@
-// app/api/create-signer/route.ts
-// Task 1: Neynar 402 → Hub direct signing fallback
-// Keeps your existing demo mode for any other error
-
-import { NextResponse } from "next/server";
+ximport { NextResponse } from "next/server";
 import { getSignedKey } from "@/utils/getSignedKey";
 import { NobleEd25519Signer } from "@farcaster/hub-nodejs";
 import { ed25519 } from "@noble/curves/ed25519";
@@ -28,7 +24,12 @@ const KEY_REGISTRY_ADD_ABI = [
 ] as const;
 
 type SignerResult =
-  | { mode: "neynar"; signer_uuid: string; approval_url: string; demo: false }
+  | {
+      mode: "neynar";
+      signer_uuid: string;
+      approval_url: string;
+      demo: false;
+    }
   | {
       mode: "hub";
       publicKey: Hex;
@@ -36,7 +37,13 @@ type SignerResult =
       keyRegistryAddress: string;
       demo: false;
     }
-  | { mode: "demo"; demo: true; message: string; signer_uuid: null; approval_url: null };
+  | {
+      mode: "demo";
+      demo: true;
+      message: string;
+      signer_uuid: null;
+      approval_url: null;
+    };
 
 function is402(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
@@ -57,48 +64,24 @@ async function buildHubKeypair(): Promise<
   Extract<SignerResult, { mode: "hub" }>
 > {
   const privBytes = ed25519.utils.randomPrivateKey();
+  const publicKey = ed25519.getPublicKey(privBytes);
   const signer = new NobleEd25519Signer(privBytes);
-  const keyResult = await signer.getSignerKey();
+  const signerResult = await signer.getSignerKey();
+  if (signerResult.isErr()) throw new Error("Failed to derive signer key");
+  const key = signerResult.value;
 
-  if (keyResult.isErr()) {
-    throw new Error(`Ed25519 key derivation failed: ${keyResult.error.message}`);
-  }
-
-  const publicKeyHex = (`0x` +
-    Buffer.from(keyResult.value).toString("hex")) as Hex;
-
-  const addKeyCalldata = encodeFunctionData({
+  const metadata = encodeFunctionData({
     abi: KEY_REGISTRY_ADD_ABI,
     functionName: "add",
-    args: [1, publicKeyHex, 0, "0x"],
+    args: [1, `0x${Buffer.from(key).toString("hex")}` as Hex, 1, "0x"],
   });
-
-  // Store encrypted privkey in env-secured cookie or return for client-side storage
-  // For now: store in encrypted env — client sends it back on post-cast
-  const privHex = Buffer.from(privBytes).toString("hex");
-
-  // Simple XOR encrypt with SIGNER_ENCRYPTION_SECRET
-  const secret = process.env.SIGNER_ENCRYPTION_SECRET ?? "changeme32chars!!changeme32chars";
-  const secretBuf = Buffer.from(secret.slice(0, 32).padEnd(32));
-  const privBuf = Buffer.from(privHex, "hex");
-  const encrypted = Buffer.alloc(privBuf.length);
-  for (let i = 0; i < privBuf.length; i++) {
-    encrypted[i] = privBuf[i] ^ secretBuf[i % secretBuf.length];
-  }
-
-  // Attach encrypted key to calldata response so frontend can store it
-  // We embed it in the publicKey comment — frontend must store it for post-cast signing
-  void encrypted; // used below via encryptedPrivKey
-  const encryptedPrivKey = encrypted.toString("hex");
 
   return {
     mode: "hub",
-    publicKey: publicKeyHex,
-    addKeyCalldata,
+    publicKey: `0x${Buffer.from(publicKey).toString("hex")}` as Hex,
+    addKeyCalldata: metadata,
     keyRegistryAddress: KEY_REGISTRY_ADDRESS,
     demo: false,
-    // @ts-expect-error — extra field for client storage
-    encryptedPrivKey,
   };
 }
 
@@ -113,17 +96,29 @@ export async function POST(): Promise<NextResponse<SignerResult>> {
       demo: false,
     });
   } catch (err: unknown) {
-    if (!is402(err)) {
-      // Non-402 error — fall through to demo mode (keeps your existing behavior)
-      const msg =
-        err instanceof Error ? err.message : "Signer creation failed";
-      console.error("[create-signer] Non-402 Neynar error:", msg);
+    const status =
+      (err as any)?.status ||
+      (err as any)?.statusCode ||
+      (err as any)?.response?.status ||
+      "unknown";
+    const msg =
+      err instanceof Error ? err.message : "Signer creation failed";
 
+    // DEBUG: Log the actual error before any fallback
+    console.error("[create-signer] ACTUAL STATUS:", status);
+    console.error("[create-signer] ACTUAL MSG:", msg);
+    console.error("[create-signer] FULL ERROR:", err);
+
+    if (!is402(err)) {
+      // Non-402 error — log it but still fall through to demo mode
+      console.error("[create-signer] Non-402 Neynar error:", msg);
       return NextResponse.json({
         mode: "demo",
         demo: true,
         message:
-          "Demo mode — Neynar API credits required for signer creation. You can still generate and preview casts.",
+          "Demo mode — Neynar API error (status: " +
+          status +
+          "). You can still generate and preview casts.",
         signer_uuid: null,
         approval_url: null,
       });
