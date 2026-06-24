@@ -33,7 +33,7 @@ export async function signCastWithHubSigner(
 
   const result = await makeCastAdd(
     {
-      type: CastType.TEXT, // <-- ADDED
+      type: CastType.TEXT,
       text,
       embeds: embedUrls.map((url) => ({ url })),
       embedsDeprecated: [],
