@@ -1,29 +1,14 @@
+// app/page.tsx  — full file, hub mode wired in
 'use client';
 
 import { useState, useEffect, useRef } from "react";
 import { SignInButton, useProfile } from "@farcaster/auth-kit";
 
 const VIBES = [
-  {
-    id: "builder",
-    label: "🔨 Builder",
-    desc: "Shipping updates, product lessons, and Base experiments",
-  },
-  {
-    id: "degen",
-    label: "💎 Degen",
-    desc: "Crypto thoughts, Base energy, and token culture",
-  },
-  {
-    id: "creator",
-    label: "🎨 Creator",
-    desc: "Audience growth, content ideas, and community posts",
-  },
-  {
-    id: "family",
-    label: "👨‍👩‍👧 Family Man",
-    desc: "Real life, parenting, and building for family",
-  },
+  { id: "builder", label: "🔨 Builder", desc: "Shipping updates, product lessons, and Base experiments" },
+  { id: "degen", label: "💎 Degen", desc: "Crypto thoughts, Base energy, and token culture" },
+  { id: "creator", label: "🎨 Creator", desc: "Audience growth, content ideas, and community posts" },
+  { id: "family", label: "👨‍👩‍👧 Family Man", desc: "Real life, parenting, and building for family" },
 ];
 
 const SIGNER_WAIT_MESSAGES = [
@@ -47,13 +32,26 @@ const POLL_INTERVAL_MS = 5000;
 const BACKOFF_AFTER_ATTEMPTS = 6;
 const BACKOFF_INTERVAL_MS = 10000;
 
-type Step = "setup" | "signer" | "dashboard";
+type Step = "setup" | "signer" | "hub-register" | "dashboard";
 type SignerStatus = "idle" | "pending" | "approved" | "timeout";
+type SignerMode = "neynar" | "hub" | "demo" | null;
 
-type Post = { id: string; text: string; time: string };
+interface HubSignerState {
+  publicKey: string;
+  encryptedPrivKey: string;
+  addKeyCalldata: string;
+  keyRegistryAddress: string;
+}
 
-function track(event: string, data?: Record<string, any>) {
-  console.log("[AgentYap event]", event, data || {});
+interface Post {
+  id: string;
+  text: string;
+  time: string;
+  hash?: string;
+}
+
+function track(event: string, data?: Record<string, unknown>): void {
+  console.log("[AgentYap event]", event, data ?? {});
 }
 
 function makePostId(): string {
@@ -69,12 +67,13 @@ export default function AgentYap() {
   const [step, setStep] = useState<Step>("setup");
   const [handle, setHandle] = useState("afifarioss");
   const [vibe, setVibe] = useState<string | null>(null);
-  const [bio, setBio] = useState(
-    "Dad from Ipoh building AgentYap on Base for family."
-  );
+  const [bio, setBio] = useState("Dad from Ipoh building AgentYap on Base for family.");
 
+  // Signer state — works for both neynar and hub modes
+  const [signerMode, setSignerMode] = useState<SignerMode>(null);
   const [signerUuid, setSignerUuid] = useState("");
   const [signerApprovalUrl, setSignerApprovalUrl] = useState("");
+  const [hubSigner, setHubSigner] = useState<HubSignerState | null>(null);
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [isPosting, setIsPosting] = useState(false);
@@ -100,10 +99,7 @@ export default function AgentYap() {
 
   const signerMessage =
     SIGNER_WAIT_MESSAGES[
-      Math.min(
-        Math.floor(pollSeconds / 10),
-        SIGNER_WAIT_MESSAGES.length - 1
-      )
+      Math.min(Math.floor(pollSeconds / 10), SIGNER_WAIT_MESSAGES.length - 1)
     ];
 
   useEffect(() => {
@@ -113,110 +109,75 @@ export default function AgentYap() {
     }
   }, []);
 
-  useEffect(() => {
-    latestVibeRef.current = vibe;
-  }, [vibe]);
+  useEffect(() => { latestVibeRef.current = vibe; }, [vibe]);
 
   useEffect(() => {
     if (!error) return;
-    const timeout = setTimeout(() => setError(null), 8000);
-    return () => clearTimeout(timeout);
+    const t = setTimeout(() => setError(null), 8000);
+    return () => clearTimeout(t);
   }, [error]);
 
   useEffect(() => {
     if (!toast) return;
-    const timeout = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timeout);
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
   }, [toast]);
 
   useEffect(() => {
-    if (
-      isAuthenticated &&
-      profile?.fid &&
-      !autoConnectFiredRef.current &&
-      step === "setup"
-    ) {
+    if (isAuthenticated && profile?.fid && !autoConnectFiredRef.current && step === "setup") {
       autoConnectFiredRef.current = true;
-      track("signin_completed", {
-        fid: profile.fid,
-        username: profile.username,
-      });
-      connectFarcaster();
+      track("signin_completed", { fid: profile.fid, username: profile.username });
+      void connectFarcaster();
     }
   }, [isAuthenticated, profile?.fid, step]);
 
+  // Neynar signer polling
   useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    if (step !== "signer" || signerStatus !== "pending" || !signerUuid) return;
+
     let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    pollAttemptsRef.current = 0;
+    setPollSeconds(0);
+    const elapsedMs = { current: 0 };
 
-    if (step === "signer" && signerStatus === "pending" && signerUuid) {
-      pollAttemptsRef.current = 0;
-      setPollSeconds(0);
+    const poll = async (): Promise<void> => {
+      if (cancelled) return;
+      pollAttemptsRef.current += 1;
+      const interval = pollAttemptsRef.current <= BACKOFF_AFTER_ATTEMPTS
+        ? POLL_INTERVAL_MS : BACKOFF_INTERVAL_MS;
+      elapsedMs.current += interval;
+      setPollSeconds(Math.round(elapsedMs.current / 1000));
 
-      const elapsedMsRef = { current: 0 };
+      if (pollAttemptsRef.current >= MAX_POLL_ATTEMPTS) {
+        setSignerStatus("timeout");
+        track("signer_timeout", { signerUuid });
+        return;
+      }
 
-      const poll = async () => {
-        if (cancelled) return;
+      try {
+        const res = await fetch(`/api/check-signer?signerUuid=${signerUuid}`);
+        const data = (await res.json()) as { approved?: boolean; status?: string };
+        track("signer_poll", { approved: data.approved, attempt: pollAttemptsRef.current });
 
-        pollAttemptsRef.current += 1;
-
-        elapsedMsRef.current +=
-          pollAttemptsRef.current <= BACKOFF_AFTER_ATTEMPTS
-            ? POLL_INTERVAL_MS
-            : BACKOFF_INTERVAL_MS;
-
-        setPollSeconds(Math.round(elapsedMsRef.current / 1000));
-
-        if (pollAttemptsRef.current >= MAX_POLL_ATTEMPTS) {
-          setSignerStatus("timeout");
-          track("signer_timeout", {
-            signerUuid,
-            pollSeconds: elapsedMsRef.current / 1000,
-          });
+        if (data.approved === true) {
+          setSignerStatus("approved");
+          setStep("dashboard");
+          track("signer_approved", { signerUuid });
           return;
         }
+      } catch (e) {
+        console.error("[poll]", e);
+      }
 
-        try {
-          const res = await fetch(
-            `/api/check-signer?signerUuid=${signerUuid}`
-          );
-          const data = await res.json();
+      if (cancelled) return;
+      timeoutId = setTimeout(
+        poll,
+        pollAttemptsRef.current < BACKOFF_AFTER_ATTEMPTS ? POLL_INTERVAL_MS : BACKOFF_INTERVAL_MS
+      );
+    };
 
-          track("signer_poll", {
-            approved: data.approved,
-            status: data.status,
-            attempt: pollAttemptsRef.current,
-          });
-
-          if (data.approved === true) {
-            setSignerStatus("approved");
-            setStep("dashboard");
-            track("signer_approved", {
-              signerUuid,
-              status: data.status,
-            });
-            return;
-          }
-        } catch (e) {
-          console.error("Polling error:", e);
-          track("signer_poll_error", {
-            attempt: pollAttemptsRef.current,
-          });
-        }
-
-        if (cancelled) return;
-
-        const nextDelay =
-          pollAttemptsRef.current < BACKOFF_AFTER_ATTEMPTS
-            ? POLL_INTERVAL_MS
-            : BACKOFF_INTERVAL_MS;
-
-        timeoutId = setTimeout(poll, nextDelay);
-      };
-
-      timeoutId = setTimeout(poll, 1500);
-    }
-
+    timeoutId = setTimeout(poll, 1500);
     return () => {
       cancelled = true;
       if (timeoutId) clearTimeout(timeoutId);
@@ -225,80 +186,97 @@ export default function AgentYap() {
 
   useEffect(() => {
     if (step === "dashboard") {
-      track("dashboard_view", {
-        vibe,
-        username: profile?.username || handle,
-      });
+      track("dashboard_view", { vibe, username: profile?.username ?? handle });
     }
   }, [step]);
 
-  async function connectFarcaster() {
+  async function connectFarcaster(): Promise<void> {
     if (!isAuthenticated || !profile?.fid) {
-      setError(
-        "Sign in with Farcaster first — we need your FID to create a signer."
-      );
+      setError("Sign in with Farcaster first.");
       return;
     }
 
     setError(null);
-    track("signer_create_started", {
-      fid: profile.fid,
-      username: profile.username || handle,
-    });
+    track("signer_create_started", { fid: profile.fid });
 
     try {
       const res = await fetch("/api/create-signer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fid: profile.fid,
-          username: profile.username || handle,
-        }),
+        body: JSON.stringify({ fid: profile.fid, username: profile.username ?? handle }),
       });
 
-      const data = await res.json();
+      const data = (await res.json()) as {
+        mode?: string;
+        demo?: boolean;
+        message?: string;
+        signer_uuid?: string;
+        approval_url?: string;
+        // hub fields
+        publicKey?: string;
+        encryptedPrivKey?: string;
+        addKeyCalldata?: string;
+        keyRegistryAddress?: string;
+      };
 
-      if (!res.ok) {
-        throw new Error(data.error || "Could not create signer");
-      }
-
+      // Demo fallback
       if (data.demo === true) {
+        setSignerMode("demo");
         setError(
-          "Demo mode — Neynar API credits required to publish casts. You can still generate and preview casts below. Tap a vibe to try it out!"
+          "Demo mode — Neynar credits required to publish. You can still generate and preview casts."
         );
         autoConnectFiredRef.current = false;
-        track("signer_demo_mode", { message: data.message });
+        track("signer_demo_mode");
         return;
       }
 
-      setSignerUuid(data.signer_uuid);
-      setSignerApprovalUrl(data.approval_url);
-      setSignerStatus("pending");
-      setStep("signer");
+      // Hub fallback (Neynar 402)
+      if (data.mode === "hub" && data.publicKey && data.encryptedPrivKey) {
+        setSignerMode("hub");
+        setHubSigner({
+          publicKey: data.publicKey,
+          encryptedPrivKey: data.encryptedPrivKey,
+          addKeyCalldata: data.addKeyCalldata ?? "",
+          keyRegistryAddress: data.keyRegistryAddress ?? "",
+        });
+        setStep("hub-register");
+        track("signer_hub_mode", { publicKey: data.publicKey });
+        return;
+      }
 
-      track("signer_created", {
-        signerUuid: data.signer_uuid,
-        hasApprovalUrl: Boolean(data.approval_url),
-      });
-    } catch (e: any) {
-      setError(e.message || "Something went wrong creating your signer.");
+      // Neynar success
+      if (data.signer_uuid && data.approval_url) {
+        setSignerMode("neynar");
+        setSignerUuid(data.signer_uuid);
+        setSignerApprovalUrl(data.approval_url);
+        setSignerStatus("pending");
+        setStep("signer");
+        track("signer_created", { signerUuid: data.signer_uuid });
+        return;
+      }
+
+      throw new Error(data.message ?? "Unknown signer response");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Something went wrong.";
+      setError(msg);
       autoConnectFiredRef.current = false;
-      track("signer_create_error", { message: e.message });
+      track("signer_create_error", { message: msg });
     }
   }
 
-  function retryConnect() {
-    track("signer_retry_clicked");
+  function retryConnect(): void {
     setSignerStatus("idle");
     setSignerApprovalUrl("");
     setSignerUuid("");
+    setHubSigner(null);
+    setSignerMode(null);
     setPollSeconds(0);
     autoConnectFiredRef.current = false;
     setStep("setup");
-    setTimeout(() => { connectFarcaster(); }, 0);
+    setTimeout(() => { void connectFarcaster(); }, 0);
   }
 
-  async function handleVibeSelect(vibeId: string) {
+  async function handleVibeSelect(vibeId: string): Promise<void> {
     setVibe(vibeId);
     latestVibeRef.current = vibeId;
     track("vibe_selected", { vibe: vibeId });
@@ -318,70 +296,55 @@ export default function AgentYap() {
         body: JSON.stringify({ vibe: vibeId, handle, bio }),
       });
 
-      const data = await res.json();
-
+      const data = (await res.json()) as { text?: string; error?: string };
       if (latestVibeRef.current !== vibeId) return;
+      if (!res.ok || data.error) throw new Error(data.error ?? "Sample generation failed");
 
-      if (!res.ok || data.error) {
-        throw new Error(data.error || "Sample generation failed");
-      }
-
-      sampleCacheRef.current[vibeId] = data.text;
-      setSamplePost(data.text);
-      track("sample_generated", { vibe: vibeId });
-    } catch (e: any) {
+      sampleCacheRef.current[vibeId] = data.text ?? "";
+      setSamplePost(data.text ?? "");
+    } catch (e: unknown) {
       if (latestVibeRef.current === vibeId) {
-        setSamplePost("⚠️ Could not load a sample right now — try tapping again.");
+        setSamplePost("⚠️ Could not load a sample — tap the vibe again.");
       }
-      track("sample_error", { vibe: vibeId, message: e.message });
     } finally {
-      if (latestVibeRef.current === vibeId) {
-        setIsSampleLoading(false);
-      }
+      if (latestVibeRef.current === vibeId) setIsSampleLoading(false);
     }
   }
 
-  async function handlePreview() {
+  async function handlePreview(): Promise<void> {
     if (!vibe) { setError("Pick a vibe first."); return; }
-
     setError(null);
     setIsPreviewLoading(true);
-    track("preview_started", { vibe });
 
     try {
       const res = await fetch("/api/generate-post", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          vibe,
-          handle: profile?.username || handle,
-          bio,
-        }),
+        body: JSON.stringify({ vibe, handle: profile?.username ?? handle, bio }),
       });
-
-      const data = await res.json();
-
-      if (!res.ok || data.error) {
-        throw new Error(data.error || "Generation failed");
-      }
-
-      setPreview(data.text);
-      track("preview_generated", { vibe });
-    } catch (e: any) {
-      setError(e.message || "Could not generate preview.");
-      track("preview_error", { vibe, message: e.message });
+      const data = (await res.json()) as { text?: string; error?: string };
+      if (!res.ok || data.error) throw new Error(data.error ?? "Generation failed");
+      setPreview(data.text ?? "");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Could not generate preview.");
     } finally {
       setIsPreviewLoading(false);
     }
   }
 
-  async function handlePost() {
-    if (!signerUuid) { setError("Signer not ready — reconnect Farcaster."); return; }
+  async function handlePost(): Promise<void> {
     if (!vibe) { setError("Pick a vibe first."); return; }
+
+    const isHubMode = signerMode === "hub" && hubSigner;
+    const isNeynarMode = signerMode === "neynar" && signerUuid;
+
+    if (!isHubMode && !isNeynarMode) {
+      setError("Signer not ready — reconnect Farcaster.");
+      return;
+    }
 
     setError(null);
     setIsPosting(true);
-    track("post_started", { vibe });
 
     try {
       let text = preview;
@@ -390,228 +353,175 @@ export default function AgentYap() {
         const genRes = await fetch("/api/generate-post", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            vibe,
-            handle: profile?.username || handle,
-            bio,
-          }),
+          body: JSON.stringify({ vibe, handle: profile?.username ?? handle, bio }),
         });
-
-        const genData = await genRes.json();
-
-        if (!genRes.ok || genData.error) {
-          throw new Error(genData.error || "Could not generate cast.");
-        }
-
-        text = genData.text;
+        const genData = (await genRes.json()) as { text?: string; error?: string };
+        if (!genRes.ok || genData.error) throw new Error(genData.error ?? "Could not generate cast.");
+        text = genData.text ?? "";
       }
+
+      // Build post-cast body based on signer mode
+      const postBody = isHubMode
+        ? {
+            mode: "hub" as const,
+            encryptedPrivKey: hubSigner.encryptedPrivKey,
+            fid: profile?.fid,
+            text,
+            vibe: vibe ?? "builder",
+            isAgent: true,
+          }
+        : {
+            mode: "neynar" as const,
+            signerUuid,
+            fid: profile?.fid,
+            text,
+            vibe: vibe ?? "builder",
+            isAgent: true,
+          };
 
       const postRes = await fetch("/api/post-cast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ signerUuid, text }),
+        body: JSON.stringify(postBody),
       });
 
-      const postData = await postRes.json();
+      const postData = (await postRes.json()) as {
+        hash?: string;
+        cast_url?: string;
+        error?: string;
+      };
 
-      if (!postRes.ok || postData.error) {
-        throw new Error(postData.error || "Post failed");
-      }
+      if (!postRes.ok || postData.error) throw new Error(postData.error ?? "Post failed");
 
-      setPosts((currentPosts) => [
-        { id: makePostId(), text, time: new Date().toLocaleTimeString() },
-        ...currentPosts,
+      setPosts((current) => [
+        {
+          id: makePostId(),
+          text,
+          time: new Date().toLocaleTimeString(),
+          hash: postData.hash,
+        },
+        ...current,
       ]);
 
       setPreview("");
-      track("cast_posted", { vibe, hash: postData.hash });
-    } catch (e: any) {
-      setError(e.message || "Could not post that cast.");
-      track("post_error", { vibe, message: e.message });
+      setToast("🟦 Cast posted to Farcaster");
+      track("cast_posted", { vibe, hash: postData.hash, mode: signerMode });
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Could not post that cast.");
     } finally {
       setIsPosting(false);
     }
   }
 
+  // ─── Shared styles ───────────────────────────────────────
+  const cardStyle: React.CSSProperties = {
+    background: "#0b1120",
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 16,
+    border: "1px solid #1f2937",
+  };
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 12,
+    color: "#818cf8",
+    marginBottom: 8,
+    letterSpacing: 0.8,
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    boxSizing: "border-box",
+    background: "#020617",
+    color: "#fff",
+    padding: 13,
+    borderRadius: 10,
+    border: "1px solid #1f2937",
+    outline: "none",
+  };
+
   return (
     <>
-      <div
-        style={{
-          minHeight: "100vh",
-          background:
-            "radial-gradient(circle at top, #111827 0%, #050510 45%, #020617 100%)",
-          color: "#e0e0ff",
-          padding: 20,
-          fontFamily: "monospace",
-        }}
-      >
+      <div style={{
+        minHeight: "100vh",
+        background: "radial-gradient(circle at top, #111827 0%, #050510 45%, #020617 100%)",
+        color: "#e0e0ff",
+        padding: 20,
+        fontFamily: "monospace",
+      }}>
         <div style={{ maxWidth: 640, margin: "0 auto" }}>
           <style jsx global>{`
-            @keyframes spin {
-              from { transform: rotate(0deg); }
-              to { transform: rotate(360deg); }
-            }
+            @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
             @keyframes pulseGlow {
-              0% { box-shadow: 0 0 0 rgba(34, 197, 94, 0); }
-              50% { box-shadow: 0 0 24px rgba(34, 197, 94, 0.18); }
-              100% { box-shadow: 0 0 0 rgba(34, 197, 94, 0); }
+              0% { box-shadow: 0 0 0 rgba(34,197,94,0); }
+              50% { box-shadow: 0 0 24px rgba(34,197,94,0.18); }
+              100% { box-shadow: 0 0 0 rgba(34,197,94,0); }
             }
           `}</style>
 
+          {/* ─── Header ─── */}
           <header style={{ marginBottom: 24, paddingTop: 12 }}>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                background: "#111827",
-                border: "1px solid #1f2937",
-                color: "#22c55e",
-                fontSize: 12,
-                padding: "6px 10px",
-                borderRadius: 999,
-                marginBottom: 14,
-              }}
-            >
-              GROK + NEYNAR • BUILT ON FARCASTER
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              background: "#111827", border: "1px solid #1f2937",
+              color: "#22c55e", fontSize: 12, padding: "6px 10px",
+              borderRadius: 999, marginBottom: 14,
+            }}>
+              HIP v1.0 • BUILT ON BASE • FARCASTER-NATIVE
             </div>
 
-            <div style={{ fontSize: 34, fontWeight: "bold", lineHeight: 1.1 }}>
-              AgentYap
-            </div>
-
+            <div style={{ fontSize: 34, fontWeight: "bold", lineHeight: 1.1 }}>AgentYap</div>
             <div style={{ fontSize: 18, color: "#c4b5fd", marginTop: 8, lineHeight: 1.4 }}>
-              AI casts for Farcaster builders, creators, and Base natives.
+              Hybrid Identity Protocol for Farcaster builders.
             </div>
-
             <p style={{ color: "#a1a1aa", lineHeight: 1.7, marginTop: 14 }}>
-              Turn rough ideas into ready-to-post Farcaster casts in seconds.
-              Choose your vibe, preview the cast, edit it, and post when you are ready.
+              AI generates. You approve. 🟦 marks it onchain-attributed.
+              Every cast is human-approved before it leaves your account.
             </p>
-
             <p style={{ color: "#71717a", fontSize: 13, lineHeight: 1.6 }}>
-              Built by <strong style={{ color: "#e0e0ff" }}>afifarioss</strong> —
-              an Ipoh dad building AgentYap in public on Base.
+              Built by <strong style={{ color: "#e0e0ff" }}>afifarioss</strong> — Ipoh dad. Base builder. 3 kids.
             </p>
           </header>
 
+          {/* ─── Error / Toast ─── */}
           {error && (
-            <div
-              style={{
-                background: "#1a0e10",
-                border: "1px solid #ef4444",
-                color: "#fca5a5",
-                padding: "12px 16px",
-                borderRadius: 10,
-                marginBottom: 16,
-                fontSize: 14,
-              }}
-            >
-              {error}
-            </div>
+            <div style={{
+              background: "#1a0e10", border: "1px solid #ef4444",
+              color: "#fca5a5", padding: "12px 16px", borderRadius: 10,
+              marginBottom: 16, fontSize: 14,
+            }}>{error}</div>
           )}
-
           {toast && (
-            <div
-              style={{
-                background: "#0e1a12",
-                border: "1px solid #22c55e",
-                color: "#86efac",
-                padding: "12px 16px",
-                borderRadius: 10,
-                marginBottom: 16,
-                fontSize: 14,
-              }}
-            >
-              {toast}
-            </div>
+            <div style={{
+              background: "#0e1a12", border: "1px solid #22c55e",
+              color: "#86efac", padding: "12px 16px", borderRadius: 10,
+              marginBottom: 16, fontSize: 14,
+            }}>{toast}</div>
           )}
 
+          {/* ─── SETUP STEP ─── */}
           {step === "setup" && (
             <>
-              <section
-                style={{
-                  background: "#0b1120",
-                  padding: 20,
-                  borderRadius: 16,
-                  marginBottom: 16,
-                  border: "1px solid #1f2937",
-                }}
-              >
-                <div style={{ fontSize: 12, color: "#818cf8", marginBottom: 8, letterSpacing: 0.8 }}>
-                  WHY AGENTYAP EXISTS
-                </div>
+              <section style={cardStyle}>
+                <div style={labelStyle}>WHY AGENTYAP EXISTS</div>
                 <p style={{ color: "#d4d4d8", lineHeight: 1.7, margin: 0 }}>
-                  Posting every day is hard. Sometimes your idea is messy.
-                  Sometimes you are tired after work, family, building, and life.
-                  AgentYap helps turn simple thoughts into clean Farcaster casts —
-                  without losing your voice.
+                  Posting every day is hard. AgentYap turns rough ideas into clean Farcaster casts —
+                  without losing your voice. AI assists. You approve. 🟦 marks the attribution.
                 </p>
               </section>
 
-              <section
-                style={{
-                  background: "#0b1120",
-                  padding: 20,
-                  borderRadius: 16,
-                  marginBottom: 16,
-                  border: "1px solid #1f2937",
-                }}
-              >
-                <div style={{ fontSize: 12, color: "#818cf8", marginBottom: 10, letterSpacing: 0.8 }}>
-                  WHAT YOU GET
-                </div>
-                <ul style={{ color: "#a1a1aa", lineHeight: 1.8, paddingLeft: 20, margin: 0 }}>
-                  <li>AI-written Farcaster casts in your chosen style</li>
-                  <li>Cast ideas for builders, creators, degens, and parents</li>
-                  <li>Preview and edit before posting</li>
-                  <li>Your own approved signer through Neynar</li>
-                  <li>AgentYap never holds your wallet keys</li>
-                  <li>You stay in control of every cast</li>
-                </ul>
-              </section>
-
-              <section
-                style={{
-                  background: "#0b1120",
-                  padding: 18,
-                  borderRadius: 16,
-                  marginBottom: 14,
-                  border: "1px solid #1f2937",
-                }}
-              >
-                <div style={{ fontSize: 12, color: "#818cf8", marginBottom: 6, letterSpacing: 0.8 }}>
-                  FARCASTER HANDLE
-                </div>
+              <section style={cardStyle}>
+                <div style={labelStyle}>FARCASTER HANDLE</div>
                 <input
                   value={handle}
                   onChange={(e) => setHandle(e.target.value.replace("@", ""))}
                   placeholder="afifarioss"
-                  style={{
-                    width: "100%",
-                    boxSizing: "border-box",
-                    background: "#020617",
-                    color: "#fff",
-                    padding: 13,
-                    borderRadius: 10,
-                    border: "1px solid #1f2937",
-                    outline: "none",
-                  }}
+                  style={inputStyle}
                 />
               </section>
 
-              <section
-                style={{
-                  background: "#0b1120",
-                  padding: 18,
-                  borderRadius: 16,
-                  marginBottom: 14,
-                  border: "1px solid #1f2937",
-                }}
-              >
-                <div style={{ fontSize: 12, color: "#818cf8", marginBottom: 8, letterSpacing: 0.8 }}>
-                  CHOOSE YOUR VIBE
-                </div>
+              <section style={cardStyle}>
+                <div style={labelStyle}>CHOOSE YOUR VIBE</div>
                 <div style={{ fontSize: 13, color: "#71717a", marginBottom: 12 }}>
                   Tap one to see a sample before signing in.
                 </div>
@@ -619,13 +529,15 @@ export default function AgentYap() {
                 {VIBES.map((v) => (
                   <div
                     key={v.id}
-                    onClick={() => handleVibeSelect(v.id)}
+                    onClick={() => void handleVibeSelect(v.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === "Enter" && void handleVibeSelect(v.id)}
+                    aria-pressed={vibe === v.id}
                     style={{
                       padding: 14,
                       background: vibe === v.id ? "#12231a" : "#020617",
-                      marginBottom: 10,
-                      borderRadius: 12,
-                      cursor: "pointer",
+                      marginBottom: 10, borderRadius: 12, cursor: "pointer",
                       border: vibe === v.id ? "1px solid #22c55e" : "1px solid #1f2937",
                     }}
                   >
@@ -635,17 +547,12 @@ export default function AgentYap() {
                 ))}
 
                 {vibe && (isSampleLoading || samplePost) && (
-                  <div
-                    style={{
-                      marginTop: 14,
-                      background: "#020617",
-                      borderLeft: "3px solid #22c55e",
-                      padding: 14,
-                      borderRadius: 10,
-                    }}
-                  >
+                  <div style={{
+                    marginTop: 14, background: "#020617",
+                    borderLeft: "3px solid #22c55e", padding: 14, borderRadius: 10,
+                  }}>
                     <div style={{ fontSize: 11, color: "#22c55e", marginBottom: 8, letterSpacing: 0.6 }}>
-                      SAMPLE CAST
+                      SAMPLE CAST — HIP PREVIEW
                     </div>
                     {isSampleLoading ? (
                       <div style={{ color: "#71717a", fontSize: 14 }}>Writing a sample...</div>
@@ -658,92 +565,45 @@ export default function AgentYap() {
                 )}
               </section>
 
-              <section
-                style={{
-                  background: "#0b1120",
-                  padding: 18,
-                  borderRadius: 16,
-                  marginBottom: 18,
-                  border: "1px solid #1f2937",
-                }}
-              >
-                <div style={{ fontSize: 12, color: "#818cf8", marginBottom: 6, letterSpacing: 0.8 }}>
-                  BIO OR ROUGH IDEA
-                </div>
+              <section style={cardStyle}>
+                <div style={labelStyle}>BIO OR ROUGH IDEA</div>
                 <textarea
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  placeholder="Example: I'm building an AI tool for Farcaster creators."
-                  style={{
-                    width: "100%",
-                    boxSizing: "border-box",
-                    background: "#020617",
-                    color: "#fff",
-                    padding: 13,
-                    borderRadius: 10,
-                    border: "1px solid #1f2937",
-                    minHeight: 96,
-                    outline: "none",
-                    resize: "vertical",
-                  }}
+                  placeholder="Drop a rough idea. AgentYap will clean it up."
+                  style={{ ...inputStyle, minHeight: 96, resize: "vertical" }}
                 />
-                <div style={{ fontSize: 12, color: "#71717a", marginTop: 8 }}>
-                  Drop a rough idea. AgentYap will clean it up into a Farcaster-ready cast.
-                </div>
               </section>
 
-              <section
-                style={{
-                  background: "#0b1120",
-                  padding: 18,
-                  borderRadius: 16,
-                  marginBottom: 18,
-                  border: "1px solid #1f2937",
-                }}
-              >
-                <div style={{ fontSize: 12, color: "#818cf8", marginBottom: 8, letterSpacing: 0.8 }}>
-                  YOUR ACCOUNT STAYS YOURS
-                </div>
+              <section style={cardStyle}>
+                <div style={labelStyle}>🟦 HYBRID IDENTITY PROTOCOL</div>
                 <p style={{ color: "#a1a1aa", lineHeight: 1.7, margin: 0 }}>
-                  AgentYap uses a Farcaster signer through Neynar. You approve
-                  access, you can revoke it anytime, and AgentYap never holds your
-                  wallet keys. You preview and edit before posting.
+                  Every AI-assisted cast gets a 🟦 marker. No deception —
+                  the marker is machine-readable cast metadata. Human still owns
+                  the identity. Agent provides the voice. You approve every post.
                 </p>
               </section>
 
               {!isAuthenticated ? (
                 <div style={{ textAlign: "center", marginBottom: 30 }}>
-                  <div onClick={() => track("signin_clicked", { vibe })} style={{ marginBottom: 12 }}>
+                  <div onClick={() => track("signin_clicked", { vibe: vibe ?? undefined })} style={{ marginBottom: 12 }}>
                     <SignInButton />
                   </div>
                   <div style={{ fontSize: 12, color: "#71717a", lineHeight: 1.6 }}>
-                    Sign in with Farcaster to generate and post your first cast.
-                    <br />
-                    Signing in automatically sets up your signer.
+                    Sign in with Farcaster to post your first 🟦 cast.
                   </div>
                 </div>
               ) : (
-                <div
-                  style={{
-                    textAlign: "center",
-                    color: "#22c55e",
-                    padding: 14,
-                    background: "#052e16",
-                    border: "1px solid #14532d",
-                    borderRadius: 12,
-                  }}
-                >
+                <div style={{
+                  textAlign: "center", color: "#22c55e", padding: 14,
+                  background: "#052e16", border: "1px solid #14532d", borderRadius: 12,
+                }}>
                   <div style={{ marginBottom: 10 }}>Setting up your signer...</div>
                   <button
-                    onClick={connectFarcaster}
+                    onClick={() => void connectFarcaster()}
                     style={{
-                      background: "#22c55e",
-                      color: "#000",
-                      padding: "10px 14px",
-                      borderRadius: 10,
-                      border: "none",
-                      fontWeight: "bold",
-                      cursor: "pointer",
+                      background: "#22c55e", color: "#000", padding: "10px 14px",
+                      borderRadius: 10, border: "none", fontWeight: "bold", cursor: "pointer",
                     }}
                   >
                     Continue setup
@@ -753,184 +613,211 @@ export default function AgentYap() {
             </>
           )}
 
+          {/* ─── NEYNAR SIGNER APPROVAL STEP ─── */}
           {step === "signer" && (
-            <div
-              style={{
-                textAlign: "center",
-                padding: 28,
-                background: "#0b1120",
-                border: "1px solid #1f2937",
-                borderRadius: 16,
-                animation: "pulseGlow 2.4s ease-in-out infinite",
-              }}
-            >
-              <div
-                style={{
-                  width: 46,
-                  height: 46,
-                  border: "3px solid #1f2937",
-                  borderTop: "3px solid #22c55e",
-                  borderRadius: "50%",
-                  margin: "0 auto 18px",
-                  animation: "spin 1s linear infinite",
-                }}
-              />
+            <div style={{
+              textAlign: "center", padding: 28,
+              background: "#0b1120", border: "1px solid #1f2937", borderRadius: 16,
+              animation: "pulseGlow 2.4s ease-in-out infinite",
+            }}>
+              <div style={{
+                width: 46, height: 46, border: "3px solid #1f2937",
+                borderTop: "3px solid #22c55e", borderRadius: "50%",
+                margin: "0 auto 18px", animation: "spin 1s linear infinite",
+              }} />
 
               <div style={{ fontSize: 22, marginBottom: 10, fontWeight: "bold" }}>
                 Approve your AgentYap signer
               </div>
 
-              <p style={{ color: "#a1a1aa", fontSize: 14, lineHeight: 1.7, marginBottom: 16 }}>
-                This signer lets AgentYap publish casts you generate and confirm.
-                Your wallet keys stay yours.
-              </p>
-
               {signerStatus === "pending" && (
-                <div>
+                <>
                   <a
                     href={signerApprovalUrl}
                     target="_blank"
                     rel="noreferrer"
-                    onClick={() => track("signer_approval_clicked", { signerUuid })}
                     style={{
-                      display: "block",
-                      background: "#6366f1",
-                      color: "#fff",
-                      padding: 16,
-                      borderRadius: 12,
-                      margin: "18px 0",
-                      textDecoration: "none",
-                      fontWeight: "bold",
+                      display: "block", background: "#6366f1", color: "#fff",
+                      padding: 16, borderRadius: 12, margin: "18px 0",
+                      textDecoration: "none", fontWeight: "bold",
                     }}
                   >
                     Open Farcaster approval →
                   </a>
 
-                  <div
-                    style={{
-                      background: "#020617",
-                      border: "1px solid #1f2937",
-                      borderRadius: 12,
-                      padding: 14,
-                      marginTop: 14,
-                    }}
-                  >
+                  <div style={{
+                    background: "#020617", border: "1px solid #1f2937",
+                    borderRadius: 12, padding: 14, marginTop: 14,
+                  }}>
                     <p style={{ fontSize: 14, color: "#22c55e", margin: 0, lineHeight: 1.6 }}>
                       {signerMessage}
                     </p>
                     <div style={{ fontSize: 12, color: "#71717a", marginTop: 6 }}>
-                      Checking approval status... {pollSeconds}s
+                      Checking... {pollSeconds}s
                     </div>
                   </div>
-
-                  <p style={{ fontSize: 13, color: "#71717a", marginTop: 14, lineHeight: 1.6 }}>
-                    After approving in Farcaster, return to this tab. AgentYap
-                    will move forward automatically.
-                  </p>
 
                   {pollSeconds >= 20 && (
                     <button
                       onClick={retryConnect}
                       style={{
-                        background: "#1f2937",
-                        color: "#fff",
-                        padding: "10px 14px",
-                        borderRadius: 10,
-                        border: "1px solid #374151",
-                        cursor: "pointer",
-                        marginTop: 8,
+                        background: "#1f2937", color: "#fff", padding: "10px 14px",
+                        borderRadius: 10, border: "1px solid #374151", cursor: "pointer", marginTop: 12,
                       }}
                     >
                       Still stuck? Try again
                     </button>
                   )}
-                </div>
+                </>
               )}
 
               {signerStatus === "timeout" && (
-                <div>
+                <>
                   <p style={{ color: "#f59e0b", fontSize: 16, marginBottom: 16 }}>
-                    Signer approval took too long. No worries — you can restart the approval flow.
+                    Approval timed out. Restart the flow below.
                   </p>
                   <button
                     onClick={retryConnect}
                     style={{
-                      background: "#6366f1",
-                      color: "#fff",
-                      padding: "14px 24px",
-                      borderRadius: 10,
-                      fontWeight: "bold",
-                      border: "none",
-                      cursor: "pointer",
+                      background: "#6366f1", color: "#fff", padding: "14px 24px",
+                      borderRadius: 10, fontWeight: "bold", border: "none", cursor: "pointer",
                     }}
                   >
                     Restart signer setup
                   </button>
-                </div>
+                </>
               )}
             </div>
           )}
 
-          {step === "dashboard" && (
-            <div>
-              <section
+          {/* ─── HUB REGISTER STEP (new — for 402 fallback) ─── */}
+          {step === "hub-register" && hubSigner && (
+            <div style={{
+              padding: 24, background: "#0b1120",
+              border: "1px solid #1f2937", borderRadius: 16,
+            }}>
+              <div style={{ fontSize: 20, fontWeight: "bold", marginBottom: 12 }}>
+                🟦 Register your agent key onchain
+              </div>
+              <p style={{ color: "#a1a1aa", lineHeight: 1.7, marginBottom: 16 }}>
+                Neynar credits are exhausted. AgentYap generated a direct signing key.
+                You need to register it onchain via the Farcaster Key Registry on Optimism.
+              </p>
+
+              <div style={{
+                background: "#020617", border: "1px solid #374151",
+                borderRadius: 10, padding: 14, marginBottom: 16,
+              }}>
+                <div style={{ fontSize: 11, color: "#818cf8", marginBottom: 6 }}>YOUR AGENT PUBLIC KEY</div>
+                <div style={{ fontSize: 11, color: "#22c55e", wordBreak: "break-all", fontFamily: "monospace" }}>
+                  {hubSigner.publicKey}
+                </div>
+              </div>
+
+              <div style={{
+                background: "#1a1000", border: "1px solid #78350f",
+                borderRadius: 10, padding: 14, marginBottom: 20, fontSize: 13, color: "#fbbf24",
+                lineHeight: 1.7,
+              }}>
+                <strong>How to register:</strong><br />
+                1. Open a wallet on Optimism (MetaMask, Rainbow, etc.)<br />
+                2. Call <code>add()</code> on Key Registry: <code>0x00000000Fc1237824fb747aBDE0FF18990E59b7e</code><br />
+                3. Use the calldata below, or paste it into a raw transaction<br />
+                4. After the tx confirms, come back and tap Continue
+              </div>
+
+              <div style={{
+                background: "#020617", border: "1px solid #374151",
+                borderRadius: 10, padding: 12, marginBottom: 20,
+              }}>
+                <div style={{ fontSize: 11, color: "#818cf8", marginBottom: 6 }}>CALLDATA</div>
+                <div style={{
+                  fontSize: 10, color: "#a1a1aa", wordBreak: "break-all",
+                  fontFamily: "monospace", maxHeight: 80, overflow: "auto",
+                }}>
+                  {hubSigner.addKeyCalldata}
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(hubSigner.addKeyCalldata);
+                    setToast("Calldata copied");
+                  }}
+                  style={{
+                    background: "#1f2937", color: "#fff", padding: "10px 14px",
+                    borderRadius: 10, border: "1px solid #374151", cursor: "pointer", flex: 1,
+                  }}
+                >
+                  Copy calldata
+                </button>
+                <button
+                  onClick={() => setStep("dashboard")}
+                  style={{
+                    background: "#22c55e", color: "#000", padding: "10px 14px",
+                    borderRadius: 10, border: "none", fontWeight: "bold", cursor: "pointer", flex: 1,
+                  }}
+                >
+                  Continue →
+                </button>
+              </div>
+
+              <button
+                onClick={retryConnect}
                 style={{
-                  background: "#0b1120",
-                  padding: 20,
-                  borderRadius: 16,
-                  marginBottom: 16,
-                  border: "1px solid #1f2937",
+                  background: "transparent", color: "#71717a", padding: "10px 0",
+                  border: "none", cursor: "pointer", fontSize: 13, marginTop: 10, width: "100%",
                 }}
               >
+                Try Neynar again instead
+              </button>
+            </div>
+          )}
+
+          {/* ─── DASHBOARD STEP ─── */}
+          {step === "dashboard" && (
+            <div>
+              <section style={cardStyle}>
                 <div style={{ fontSize: 22, fontWeight: "bold", marginBottom: 6 }}>
                   Your AgentYap workspace
                 </div>
 
-                <p style={{ color: "#a1a1aa", lineHeight: 1.7, marginTop: 0 }}>
-                  Pick your vibe, update your rough idea, generate a cast, then
-                  post when it sounds like you.
-                </p>
+                {/* Signer mode badge */}
+                <div style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  background: signerMode === "hub" ? "#1a1000" : "#052e16",
+                  border: `1px solid ${signerMode === "hub" ? "#78350f" : "#14532d"}`,
+                  color: signerMode === "hub" ? "#fbbf24" : "#22c55e",
+                  fontSize: 11, padding: "4px 10px", borderRadius: 999, marginBottom: 14,
+                }}>
+                  {signerMode === "hub"
+                    ? "🔑 Hub direct signing (onchain key)"
+                    : signerMode === "neynar"
+                    ? "✅ Neynar managed signer"
+                    : "👁 Demo mode"}
+                </div>
 
-                <div
-                  style={{
-                    background: "#020617",
-                    border: "1px solid #1f2937",
-                    borderRadius: 12,
-                    padding: 14,
-                    marginBottom: 14,
-                  }}
-                >
+                <div style={{
+                  background: "#020617", border: "1px solid #1f2937",
+                  borderRadius: 12, padding: 14, marginBottom: 14,
+                }}>
                   <div style={{ fontSize: 11, color: "#22c55e", marginBottom: 8, letterSpacing: 0.6 }}>
-                    CURRENT SETUP
+                    HIP STATUS
                   </div>
                   <div style={{ color: "#e0e0ff", fontSize: 14, lineHeight: 1.7 }}>
-                    Vibe: <strong>{selectedVibe?.label || "Not selected"}</strong>
-                    <br />
-                    Handle: <strong>@{profile?.username || handle}</strong>
+                    Vibe: <strong>{selectedVibe?.label ?? "Not selected"}</strong><br />
+                    Handle: <strong>@{profile?.username ?? handle}</strong><br />
+                    Attribution: <strong>🟦 AgentYap [HIP-1.0]</strong>
                   </div>
                 </div>
 
-                <div style={{ fontSize: 12, color: "#818cf8", marginBottom: 6, letterSpacing: 0.8 }}>
-                  WHAT SHOULD AGENTYAP WRITE ABOUT?
-                </div>
-
+                <div style={labelStyle}>WHAT SHOULD AGENTYAP WRITE ABOUT?</div>
                 <textarea
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="What are you building, learning, or thinking about today?"
-                  style={{
-                    width: "100%",
-                    boxSizing: "border-box",
-                    background: "#020617",
-                    color: "#fff",
-                    padding: 13,
-                    borderRadius: 10,
-                    border: "1px solid #1f2937",
-                    minHeight: 96,
-                    outline: "none",
-                    resize: "vertical",
-                    marginBottom: 14,
-                  }}
+                  style={{ ...inputStyle, minHeight: 96, resize: "vertical", marginBottom: 14 }}
                 />
 
                 <div style={{ display: "grid", gap: 8, marginBottom: 14 }}>
@@ -939,13 +826,8 @@ export default function AgentYap() {
                       key={idea}
                       onClick={() => setBio(idea)}
                       style={{
-                        textAlign: "left",
-                        background: "#020617",
-                        color: "#a1a1aa",
-                        border: "1px solid #1f2937",
-                        borderRadius: 10,
-                        padding: 10,
-                        cursor: "pointer",
+                        textAlign: "left", background: "#020617", color: "#a1a1aa",
+                        border: "1px solid #1f2937", borderRadius: 10, padding: 10, cursor: "pointer",
                       }}
                     >
                       {idea}
@@ -955,14 +837,11 @@ export default function AgentYap() {
 
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <button
-                    onClick={handlePreview}
+                    onClick={() => void handlePreview()}
                     disabled={isPreviewLoading}
                     style={{
-                      background: "#1f2937",
-                      color: "#fff",
-                      padding: "12px 16px",
-                      borderRadius: 10,
-                      border: "1px solid #374151",
+                      background: "#1f2937", color: "#fff", padding: "12px 16px",
+                      borderRadius: 10, border: "1px solid #374151",
                       cursor: isPreviewLoading ? "not-allowed" : "pointer",
                     }}
                   >
@@ -970,116 +849,74 @@ export default function AgentYap() {
                   </button>
 
                   <button
-                    onClick={handlePost}
-                    disabled={isPosting}
+                    onClick={() => void handlePost()}
+                    disabled={isPosting || signerMode === "demo"}
+                    title={signerMode === "demo" ? "Demo mode — publishing disabled" : undefined}
                     style={{
-                      background: isPosting ? "#444" : "#22c55e",
-                      color: "#000",
-                      padding: "12px 16px",
-                      borderRadius: 10,
-                      border: "none",
-                      fontWeight: "bold",
-                      cursor: isPosting ? "not-allowed" : "pointer",
+                      background: isPosting || signerMode === "demo" ? "#444" : "#22c55e",
+                      color: "#000", padding: "12px 16px", borderRadius: 10,
+                      border: "none", fontWeight: "bold",
+                      cursor: isPosting || signerMode === "demo" ? "not-allowed" : "pointer",
                     }}
                   >
-                    {isPosting ? "Posting..." : "Post to Farcaster"}
+                    {isPosting ? "Posting..." : signerMode === "demo" ? "Demo — no credits" : "Post 🟦 to Farcaster"}
                   </button>
                 </div>
               </section>
 
               {preview && (
-                <section
-                  style={{
-                    background: "#020617",
-                    padding: 16,
-                    marginTop: 12,
-                    borderRadius: 12,
-                    whiteSpace: "pre-wrap",
-                    border: "1px solid #1f2937",
-                    lineHeight: 1.7,
-                  }}
-                >
+                <section style={{
+                  background: "#020617", padding: 16, marginTop: 12,
+                  borderRadius: 12, whiteSpace: "pre-wrap",
+                  border: "1px solid #22c55e", lineHeight: 1.7,
+                }}>
                   <div style={{ fontSize: 11, color: "#22c55e", marginBottom: 8, letterSpacing: 0.6 }}>
-                    PREVIEW
+                    PREVIEW — HIP-1.0 ATTRIBUTED
                   </div>
                   {preview}
                 </section>
               )}
 
               <section style={{ marginTop: 24 }}>
-                <div style={{ fontSize: 13, color: "#888", marginBottom: 8 }}>
-                  Recent Casts
-                </div>
+                <div style={{ fontSize: 13, color: "#888", marginBottom: 8 }}>Recent Casts</div>
 
                 {posts.length === 0 ? (
-                  <div
-                    style={{
-                      background: "#0b1120",
-                      border: "1px solid #1f2937",
-                      borderRadius: 12,
-                      padding: 18,
-                      color: "#52525b",
-                      fontSize: 13,
-                      textAlign: "center",
-                    }}
-                  >
-                    No posts yet — generate a cast above and post your first one.
+                  <div style={{
+                    background: "#0b1120", border: "1px solid #1f2937", borderRadius: 12,
+                    padding: 18, color: "#52525b", fontSize: 13, textAlign: "center",
+                  }}>
+                    No posts yet — generate and post your first 🟦 cast above.
                   </div>
                 ) : (
                   posts.map((p, i) => (
-                    <div
-                      key={p.id}
-                      style={{
-                        background: "#0b1120",
-                        padding: 14,
-                        borderRadius: 12,
-                        marginBottom: 10,
-                        border: "1px solid #1f2937",
-                        borderTop: "1px solid #2d3748",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          marginBottom: 8,
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            width: 22,
-                            height: 22,
-                            borderRadius: "50%",
-                            background: "#1f2937",
-                            color: "#a1a1aa",
-                            fontSize: 11,
-                            fontWeight: "bold",
-                          }}
-                        >
+                    <div key={p.id} style={{
+                      background: "#0b1120", padding: 14, borderRadius: 12,
+                      marginBottom: 10, border: "1px solid #1f2937",
+                    }}>
+                      <div style={{
+                        display: "flex", justifyContent: "space-between",
+                        alignItems: "center", marginBottom: 8,
+                      }}>
+                        <div style={{
+                          display: "inline-flex", alignItems: "center", justifyContent: "center",
+                          width: 22, height: 22, borderRadius: "50%", background: "#1f2937",
+                          color: "#a1a1aa", fontSize: 11, fontWeight: "bold",
+                        }}>
                           {posts.length - i}
                         </div>
 
                         <div style={{ display: "flex", gap: 6 }}>
                           <button
                             onClick={() => {
-                              const cleanText = p.text
-                                .replace(/^🟦\s*AgentYap:\s*/i, "")
-                                .trim();
-                              navigator.clipboard.writeText(cleanText);
+                              navigator.clipboard.writeText(
+                                p.text.replace(/^🟦 AgentYap \[HIP-[\d.]+\] \| \w+\n\n/, "").trim()
+                              );
                               setToast("Copied (text only)");
                             }}
                             style={{
-                              background: "transparent",
-                              color: "#71717a",
-                              border: "1px solid #1f2937",
-                              borderRadius: 8,
-                              padding: "4px 10px",
-                              fontSize: 12,
-                              cursor: "pointer",
+                              background: "transparent", color: "#71717a",
+                              border: "1px solid #1f2937", borderRadius: 8,
+                              padding: "4px 10px", fontSize: 12, cursor: "pointer",
                             }}
                           >
                             Copy
@@ -1089,36 +926,39 @@ export default function AgentYap() {
                             <button
                               onClick={() => {
                                 navigator.clipboard.writeText(p.text);
-                                setToast("Copied (with attribution)");
+                                setToast("Copied with 🟦 HIP attribution");
                               }}
                               style={{
-                                background: "transparent",
-                                color: "#71717a",
-                                border: "1px solid #1f2937",
-                                borderRadius: 8,
-                                padding: "4px 10px",
-                                fontSize: 12,
-                                cursor: "pointer",
+                                background: "transparent", color: "#71717a",
+                                border: "1px solid #1f2937", borderRadius: 8,
+                                padding: "4px 10px", fontSize: 12, cursor: "pointer",
                               }}
                             >
                               Copy + 🟦
                             </button>
                           )}
 
+                          {p.hash && (
+                            <a
+                              href={`https://warpcast.com/~/conversations/${p.hash}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{
+                                background: "transparent", color: "#6366f1",
+                                border: "1px solid #1f2937", borderRadius: 8,
+                                padding: "4px 10px", fontSize: 12, textDecoration: "none",
+                              }}
+                            >
+                              View
+                            </a>
+                          )}
+
                           <button
-                            onClick={() => {
-                              setPosts((current) =>
-                                current.filter((post) => post.id !== p.id)
-                              );
-                            }}
+                            onClick={() => setPosts((c) => c.filter((x) => x.id !== p.id))}
                             style={{
-                              background: "transparent",
-                              color: "#71717a",
-                              border: "1px solid #1f2937",
-                              borderRadius: 8,
-                              padding: "4px 10px",
-                              fontSize: 12,
-                              cursor: "pointer",
+                              background: "transparent", color: "#71717a",
+                              border: "1px solid #1f2937", borderRadius: 8,
+                              padding: "4px 10px", fontSize: 12, cursor: "pointer",
                             }}
                           >
                             Delete
@@ -1126,12 +966,10 @@ export default function AgentYap() {
                         </div>
                       </div>
 
-                      <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.7 }}>
-                        {p.text}
-                      </div>
-
+                      <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{p.text}</div>
                       <div style={{ fontSize: 11, color: "#666", marginTop: 6 }}>
                         Posted {p.time}
+                        {p.hash && <span style={{ marginLeft: 8, color: "#374151" }}>#{p.hash.slice(0, 10)}</span>}
                       </div>
                     </div>
                   ))
@@ -1140,19 +978,13 @@ export default function AgentYap() {
             </div>
           )}
 
-          <footer
-            style={{
-              marginTop: 32,
-              padding: "20px 0",
-              color: "#52525b",
-              fontSize: 12,
-              textAlign: "center",
-              lineHeight: 1.6,
-            }}
-          >
-            Built by afifarioss • Dad with 3 kids building in public on Base
+          <footer style={{
+            marginTop: 32, padding: "20px 0", color: "#52525b",
+            fontSize: 12, textAlign: "center", lineHeight: 1.6,
+          }}>
+            🟦 AgentYap HIP-1.0 • Built by afifarioss on Base
             <br />
-            Powered By AI + Neynar
+            AI assists. You approve. Blockchain attributes.
           </footer>
         </div>
       </div>
