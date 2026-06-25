@@ -1,16 +1,18 @@
-{
-  "name": "AgentYap",
-  "short_name": "AgentYap",
-  "description": "AI Agent untuk auto generate & post dekat Farcaster guna Grok",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#050510",
-  "theme_color": "#6366f1",
-  "icons": [
-    {
-      "src": "/icon.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    }
-  ]
+ {
+  "accountAssociation": {
+    "header": "eyJmaWQiOjMzMzYxMzAsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHhlQTAyODI1NmIyMTE1QjQ1MWE4ZDZhNTg4OGJFMjI5MjViMTFCN0FiIn0",
+    "payload": "eyJkb21haW4iOiJhZ2VudHlhcC14LWdyb2sudmVyY2VsLmFwcCJ9",
+    "signature": "bxpRHEbF7X5gxovIAeHXPSb4LeN2QFxMsMPK0KmENY0p2YedizZc9k4rL+3Gf4huucRmQZ7QAP2aGXNb+hGNIxw="
+  },
+  "frame": {
+    "version": "next",
+    "name": "AgentYap",
+    "iconUrl": "https://agentyap-x-grok.vercel.app/favicon.ico",
+    "homeUrl": "https://agentyap-x-grok.vercel.app",
+    "imageUrl": "https://agentyap-x-grok.vercel.app/og.png",
+    "buttonTitle": "Generate Cast",
+    "splashImageUrl": "https://agentyap-x-grok.vercel.app/og.png",
+    "splashBackgroundColor": "#0052FF",
+    "webhookUrl": "https://api.neynar.com/f/app/62bd9f65-e3a5-44a7-875f-7e2bd715ca3a/event"
+  }
 }
