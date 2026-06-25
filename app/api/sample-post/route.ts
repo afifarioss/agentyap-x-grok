@@ -1,89 +1,61 @@
 // app/api/sample-post/route.ts
-// Unchanged logic — just swaps grok import to openai
-import { NextRequest, NextResponse } from "next/server";
-import { generateVibeCast } from "@/lib/openai";
+import { NextResponse } from "next/server";
 
-const VIBE_PROMPTS: Record<string, string> = {
-  builder:
-    "Write a short punchy Farcaster cast under 280 chars from a Base ecosystem builder sharing real shipping progress.",
-  degen:
-    "Write a short punchy Farcaster cast under 280 chars with Base degen energy. No financial advice.",
-  creator:
-    "Write a short punchy Farcaster cast under 280 chars about creating and building community on Farcaster/Base.",
-  family:
-    "Write a short punchy Farcaster cast under 280 chars about building on Base while balancing family life.",
-};
-
-type RateLimitEntry = { count: number; resetAt: number };
-const hits = new Map<string, RateLimitEntry>();
-const RATE_LIMIT = 10;
-const RATE_WINDOW_MS = 10 * 60 * 1000;
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = hits.get(ip);
-  if (entry && entry.resetAt > now) {
-    if (entry.count >= RATE_LIMIT) return false;
-    entry.count += 1;
-    return true;
-  }
-  hits.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
-  return true;
+interface OpenRouterResponse {
+  choices?: Array<{ message?: { content?: string } }>;
+  error?: { message?: string };
 }
 
-function cleanText(text: string): string {
-  return text
-    .trim()
-    .replace(/^["""]+|["""]+$/g, "")
-    .replace(/^Cast:\s*/i, "")
-    .replace(/^Post:\s*/i, "")
-    .trim();
-}
-
-export async function POST(req: NextRequest): Promise<NextResponse> {
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-
-  if (!checkRateLimit(ip)) {
+export async function GET(): Promise<NextResponse> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
     return NextResponse.json(
-      { error: "Too many requests — try again in a few minutes." },
-      { status: 429 }
-    );
-  }
-
-  let vibe: string, handle: string | undefined, bio: string | undefined;
-
-  try {
-    const body = (await req.json()) as {
-      vibe?: string;
-      handle?: string;
-      bio?: string;
-    };
-    vibe = body.vibe ?? "";
-    handle = body.handle;
-    bio = body.bio;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  if (!vibe || !VIBE_PROMPTS[vibe]) {
-    return NextResponse.json(
-      { error: "Invalid or missing vibe" },
-      { status: 400 }
+      { error: "Missing OPENROUTER_API_KEY" },
+      { status: 500 }
     );
   }
 
   try {
-    const raw = await generateVibeCast(
-      vibe,
-      handle,
-      bio,
-      "Write ONE cast only as a sample teaser."
-    );
-    const text = cleanText(raw);
-    return NextResponse.json({
-      text: text.length > 320 ? text.slice(0, 317) + "..." : text,
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://agentyap-x-grok.vercel.app",
+        "X-Title": "AgentYap",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "meta-llama/llama-4-maverick:free",
+        messages: [
+          {
+            role: "system",
+            content:
+              "Write a short, punchy Farcaster cast under 280 characters from a Base ecosystem builder. Confident, technical, no fluff, no hashtags.",
+          },
+          {
+            role: "user",
+            content: "Give me one sample cast.",
+          },
+        ],
+        temperature: 0.85,
+        max_tokens: 120,
+      }),
+      signal: AbortSignal.timeout(12_000),
     });
+
+    const data = (await res.json()) as OpenRouterResponse;
+
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: data?.error?.message ?? "Generation failed" },
+        { status: res.status }
+      );
+    }
+
+    const text =
+      data.choices?.[0]?.message?.content?.trim() ?? "Sample cast ready.";
+
+    return NextResponse.json({ text });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Internal error";
     console.error("[sample-post]", err);
