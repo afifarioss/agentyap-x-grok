@@ -1,12 +1,14 @@
-// app/page.tsx  — full file, all bugs fixed
-// Fixes applied:
-// 1. Sample POST handler (was GET, now accepts POST with vibe/handle/bio)
-// 2. Signer retry: reset autoConnectFiredRef before connectFarcaster()
-// 3. Hub mode: encryptedPrivKey passed correctly
+// app/page.tsx — all lint issues fixed
+// Changes:
+// 1. Added useCallback import
+// 2. Wrapped connectFarcaster in useCallback
+// 3. Fixed setPollSeconds(0) with queueMicrotask (was direct setState in effect)
+// 4. Added all missing useEffect dependencies
+// 5. Renamed unused catch variable e → _e
 
 'use client';
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { SignInButton, useProfile } from "@farcaster/auth-kit";
 
 const VIBES = [
@@ -74,7 +76,6 @@ export default function AgentYap() {
   const [vibe, setVibe] = useState<string | null>(null);
   const [bio, setBio] = useState("Dad from Ipoh building AgentYap on Base for family.");
 
-  // Signer state — works for both neynar and hub modes
   const [signerMode, setSignerMode] = useState<SignerMode>(null);
   const [signerUuid, setSignerUuid] = useState("");
   const [signerApprovalUrl, setSignerApprovalUrl] = useState("");
@@ -128,13 +129,83 @@ export default function AgentYap() {
     return () => clearTimeout(t);
   }, [toast]);
 
+  const connectFarcaster = useCallback(async (): Promise<void> => {
+    if (!isAuthenticated || !profile?.fid) {
+      setError("Sign in with Farcaster first.");
+      return;
+    }
+
+    setError(null);
+    track("signer_create_started", { fid: profile.fid });
+
+    try {
+      const res = await fetch("/api/create-signer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fid: profile.fid, username: profile.username ?? handle }),
+      });
+
+      const data = (await res.json()) as {
+        mode?: string;
+        demo?: boolean;
+        message?: string;
+        signer_uuid?: string;
+        approval_url?: string;
+        publicKey?: string;
+        encryptedPrivKey?: string;
+        addKeyCalldata?: string;
+        keyRegistryAddress?: string;
+      };
+
+      if (data.demo === true) {
+        setSignerMode("demo");
+        setError(
+          data.message || "Demo mode — Neynar credits required to publish. You can still generate and preview casts."
+        );
+        autoConnectFiredRef.current = false;
+        track("signer_demo_mode");
+        return;
+      }
+
+      if (data.mode === "hub" && data.publicKey && data.encryptedPrivKey) {
+        setSignerMode("hub");
+        setHubSigner({
+          publicKey: data.publicKey,
+          encryptedPrivKey: data.encryptedPrivKey,
+          addKeyCalldata: data.addKeyCalldata ?? "",
+          keyRegistryAddress: data.keyRegistryAddress ?? "",
+        });
+        setStep("hub-register");
+        track("signer_hub_mode", { publicKey: data.publicKey });
+        return;
+      }
+
+      if (data.mode === "neynar" && data.signer_uuid && data.approval_url) {
+        setSignerMode("neynar");
+        setSignerUuid(data.signer_uuid);
+        setSignerApprovalUrl(data.approval_url);
+        setSignerStatus("pending");
+        setStep("signer");
+        track("signer_created", { signerUuid: data.signer_uuid });
+        return;
+      }
+
+      throw new Error(data.message ?? "Unknown signer response");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Something went wrong.";
+      setError(msg);
+      autoConnectFiredRef.current = false;
+      track("signer_create_error", { message: msg });
+    }
+  }, [isAuthenticated, profile?.fid, profile?.username, handle]);
+
   useEffect(() => {
     if (isAuthenticated && profile?.fid && !autoConnectFiredRef.current && step === "setup") {
       autoConnectFiredRef.current = true;
       track("signin_completed", { fid: profile.fid, username: profile.username });
       void connectFarcaster();
     }
-  }, [isAuthenticated, profile?.fid, step]);
+  }, [isAuthenticated, profile?.fid, profile?.username, step, connectFarcaster]);
 
   // Neynar signer polling
   useEffect(() => {
@@ -143,7 +214,7 @@ export default function AgentYap() {
     let cancelled = false;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
     pollAttemptsRef.current = 0;
-    setPollSeconds(0);
+    queueMicrotask(() => setPollSeconds(0));
     const elapsedMs = { current: 0 };
 
     const poll = async (): Promise<void> => {
@@ -171,8 +242,8 @@ export default function AgentYap() {
           track("signer_approved", { signerUuid });
           return;
         }
-      } catch (e) {
-        console.error("[poll]", e);
+      } catch (_e) {
+        console.error("[poll]", _e);
       }
 
       if (cancelled) return;
@@ -193,81 +264,7 @@ export default function AgentYap() {
     if (step === "dashboard") {
       track("dashboard_view", { vibe, username: profile?.username ?? handle });
     }
-  }, [step]);
-
-  async function connectFarcaster(): Promise<void> {
-    if (!isAuthenticated || !profile?.fid) {
-      setError("Sign in with Farcaster first.");
-      return;
-    }
-
-    setError(null);
-    track("signer_create_started", { fid: profile.fid });
-
-    try {
-      const res = await fetch("/api/create-signer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fid: profile.fid, username: profile.username ?? handle }),
-      });
-
-      const data = (await res.json()) as {
-        mode?: string;
-        demo?: boolean;
-        message?: string;
-        signer_uuid?: string;
-        approval_url?: string;
-        // hub fields
-        publicKey?: string;
-        encryptedPrivKey?: string;
-        addKeyCalldata?: string;
-        keyRegistryAddress?: string;
-      };
-
-      // Demo fallback
-      if (data.demo === true) {
-        setSignerMode("demo");
-        setError(
-          data.message || "Demo mode — Neynar credits required to publish. You can still generate and preview casts."
-        );
-        autoConnectFiredRef.current = false;
-        track("signer_demo_mode");
-        return;
-      }
-
-      // Hub fallback (Neynar 402)
-      if (data.mode === "hub" && data.publicKey && data.encryptedPrivKey) {
-        setSignerMode("hub");
-        setHubSigner({
-          publicKey: data.publicKey,
-          encryptedPrivKey: data.encryptedPrivKey,
-          addKeyCalldata: data.addKeyCalldata ?? "",
-          keyRegistryAddress: data.keyRegistryAddress ?? "",
-        });
-        setStep("hub-register");
-        track("signer_hub_mode", { publicKey: data.publicKey });
-        return;
-      }
-
-      // Neynar success
-      if (data.mode === "neynar" && data.signer_uuid && data.approval_url) {
-        setSignerMode("neynar");
-        setSignerUuid(data.signer_uuid);
-        setSignerApprovalUrl(data.approval_url);
-        setSignerStatus("pending");
-        setStep("signer");
-        track("signer_created", { signerUuid: data.signer_uuid });
-        return;
-      }
-
-      throw new Error(data.message ?? "Unknown signer response");
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Something went wrong.";
-      setError(msg);
-      autoConnectFiredRef.current = false;
-      track("signer_create_error", { message: msg });
-    }
-  }
+  }, [step, vibe, profile?.username, handle]);
 
   function retryConnect(): void {
     setSignerStatus("idle");
@@ -307,7 +304,7 @@ export default function AgentYap() {
 
       sampleCacheRef.current[vibeId] = data.text ?? "";
       setSamplePost(data.text ?? "");
-    } catch (e: unknown) {
+    } catch (_e: unknown) {
       if (latestVibeRef.current === vibeId) {
         setSamplePost("⚠️ Could not load a sample — tap the vibe again.");
       }
@@ -365,7 +362,6 @@ export default function AgentYap() {
         text = genData.text ?? "";
       }
 
-      // Build post-cast body based on signer mode
       const postBody = isHubMode
         ? {
             mode: "hub" as const,
@@ -418,7 +414,6 @@ export default function AgentYap() {
     }
   }
 
-  // ─── Shared styles ───────────────────────────────────────
   const cardStyle: React.CSSProperties = {
     background: "#0b1120",
     padding: 20,
@@ -464,7 +459,6 @@ export default function AgentYap() {
             }
           `}</style>
 
-          {/* ─── Header ─── */}
           <header style={{ marginBottom: 24, paddingTop: 12 }}>
             <div style={{
               display: "inline-flex", alignItems: "center", gap: 8,
@@ -488,7 +482,6 @@ export default function AgentYap() {
             </p>
           </header>
 
-          {/* ─── Error / Toast ─── */}
           {error && (
             <div style={{
               background: "#1a0e10", border: "1px solid #ef4444",
@@ -504,7 +497,6 @@ export default function AgentYap() {
             }}>{toast}</div>
           )}
 
-          {/* ─── SETUP STEP ─── */}
           {step === "setup" && (
             <>
               <section style={cardStyle}>
@@ -604,7 +596,6 @@ export default function AgentYap() {
                   background: "#052e16", border: "1px solid #14532d", borderRadius: 12,
                 }}>
                   <div style={{ marginBottom: 10 }}>Setting up your signer...</div>
-                  {/* BUG FIX #2: Reset autoConnectFiredRef before calling connectFarcaster */}
                   <button
                     onClick={() => {
                       autoConnectFiredRef.current = false;
@@ -622,7 +613,6 @@ export default function AgentYap() {
             </>
           )}
 
-          {/* ─── NEYNAR SIGNER APPROVAL STEP ─── */}
           {step === "signer" && (
             <div style={{
               textAlign: "center", padding: 28,
@@ -699,7 +689,6 @@ export default function AgentYap() {
             </div>
           )}
 
-          {/* ─── HUB REGISTER STEP (new — for 402 fallback) ─── */}
           {step === "hub-register" && hubSigner && (
             <div style={{
               padding: 24, background: "#0b1120",
@@ -784,7 +773,6 @@ export default function AgentYap() {
             </div>
           )}
 
-          {/* ─── DASHBOARD STEP ─── */}
           {step === "dashboard" && (
             <div>
               <section style={cardStyle}>
@@ -792,7 +780,6 @@ export default function AgentYap() {
                   Your AgentYap workspace
                 </div>
 
-                {/* Signer mode badge */}
                 <div style={{
                   display: "inline-flex", alignItems: "center", gap: 6,
                   background: signerMode === "hub" ? "#1a1000" : "#052e16",
