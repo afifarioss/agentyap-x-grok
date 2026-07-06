@@ -1,4 +1,3 @@
-// app/api/generate-post/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
 const VIBE_PROMPTS: Record<string, string> = {
@@ -20,7 +19,7 @@ interface OpenRouterResponse {
 function clean(text: string): string {
   return text
     .trim()
-    .replace(/^["""]+|["""]+$/g, "")
+    .replace(/^["""''']+|["""''']+$/g, "")
     .replace(/^Cast:\s*/i, "")
     .replace(/^Post:\s*/i, "")
     .trim();
@@ -67,6 +66,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .join("\n");
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -84,8 +86,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         temperature: 0.85,
         max_tokens: 120,
       }),
-      signal: AbortSignal.timeout(12_000),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeout);
 
     const data = (await res.json()) as OpenRouterResponse;
 
