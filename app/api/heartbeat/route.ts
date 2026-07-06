@@ -23,3 +23,4 @@ export async function GET(req: NextRequest) {
   const result = await heartbeat();
   return NextResponse.json(result);
 }
+
