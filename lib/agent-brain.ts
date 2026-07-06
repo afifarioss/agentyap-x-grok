@@ -68,18 +68,20 @@ export async function heartbeat(): Promise<{
   }
 }
 
-// ─── Think (stub — safe placeholder) ───────────────────────────────
+// ─── Think (stub) ──────────────────────────────────────────────────
 
 export async function think(input: string): Promise<string> {
   return `[Agent] Received: ${input}`;
 }
 
-// ─── Default export ────────────────────────────────────────────────
+// ─── Default Export ────────────────────────────────────────────────
 
-export default {
+const agentBrain = {
   getAgentBrain,
   getBrainState,
   updateBrainState,
   heartbeat,
   think,
 };
+
+export default agentBrain;
