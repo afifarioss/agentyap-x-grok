@@ -1,13 +1,19 @@
-// app/api/heartbeat/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { heartbeat } from "@/lib/agent-brain";
 
 export async function GET(req: NextRequest) {
-  // Security: Only allow from Vercel Cron or with secret
+  // Security: Verify CRON_SECRET
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret) {
+    return NextResponse.json(
+      { error: "CRON_SECRET not configured" },
+      { status: 500 }
+    );
+  }
+
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json(
       { error: "Unauthorized" },
       { status: 401 }
@@ -15,9 +21,5 @@ export async function GET(req: NextRequest) {
   }
 
   const result = await heartbeat();
-
-  return NextResponse.json({
-    timestamp: new Date().toISOString(),
-    ...result,
-  });
+  return NextResponse.json(result);
 }
