@@ -28,7 +28,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Return static sample immediately (fast, no API cost)
     return NextResponse.json({ text: VIBE_SAMPLES[vibe] });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Internal error";
