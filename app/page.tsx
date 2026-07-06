@@ -1,9 +1,10 @@
-// app/page.tsx — all bugs fixed (build + lint)
+// app/page.tsx — all bugs fixed (build + lint + React Compiler)
 // Changes:
-// 1. useCallback wraps async function correctly
-// 2. setPollSeconds(0) uses queueMicrotask
-// 3. All useEffect dependencies added
-// 4. Unused catch vars removed
+// 1. Destructure profile to fix React Compiler memoization
+// 2. useCallback has correct async syntax
+// 3. setPollSeconds(0) uses queueMicrotask
+// 4. All useEffect dependencies added
+// 5. Unused catch vars removed
 
 'use client';
 
@@ -70,6 +71,10 @@ function makePostId(): string {
 export default function AgentYap() {
   const { isAuthenticated, profile } = useProfile();
 
+  // Destructure profile for stable dependencies
+  const fid = profile?.fid;
+  const username = profile?.username;
+
   const [step, setStep] = useState<Step>("setup");
   const [handle, setHandle] = useState("afifarioss");
   const [vibe, setVibe] = useState<string | null>(null);
@@ -130,19 +135,19 @@ export default function AgentYap() {
 
   const connectFarcaster = useCallback(
     async (): Promise<void> => {
-      if (!isAuthenticated || !profile?.fid) {
+      if (!isAuthenticated || !fid) {
         setError("Sign in with Farcaster first.");
         return;
       }
 
       setError(null);
-      track("signer_create_started", { fid: profile.fid });
+      track("signer_create_started", { fid });
 
       try {
         const res = await fetch("/api/create-signer", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fid: profile.fid, username: profile.username ?? handle }),
+          body: JSON.stringify({ fid, username: username ?? handle }),
         });
 
         const data = (await res.json()) as {
@@ -198,17 +203,16 @@ export default function AgentYap() {
         track("signer_create_error", { message: msg });
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isAuthenticated, profile?.fid, profile?.username, handle]
+    [isAuthenticated, fid, username, handle]
   );
 
   useEffect(() => {
-    if (isAuthenticated && profile?.fid && !autoConnectFiredRef.current && step === "setup") {
+    if (isAuthenticated && fid && !autoConnectFiredRef.current && step === "setup") {
       autoConnectFiredRef.current = true;
-      track("signin_completed", { fid: profile.fid, username: profile.username });
+      track("signin_completed", { fid, username });
       void connectFarcaster();
     }
-  }, [isAuthenticated, profile?.fid, profile?.username, step, connectFarcaster]);
+  }, [isAuthenticated, fid, username, step, connectFarcaster]);
 
   // Neynar signer polling
   useEffect(() => {
@@ -265,9 +269,9 @@ export default function AgentYap() {
 
   useEffect(() => {
     if (step === "dashboard") {
-      track("dashboard_view", { vibe, username: profile?.username ?? handle });
+      track("dashboard_view", { vibe, username: username ?? handle });
     }
-  }, [step, vibe, profile?.username, handle]);
+  }, [step, vibe, username, handle]);
 
   function retryConnect(): void {
     setSignerStatus("idle");
@@ -325,7 +329,7 @@ export default function AgentYap() {
       const res = await fetch("/api/generate-post", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vibe, handle: profile?.username ?? handle, bio }),
+        body: JSON.stringify({ vibe, handle: username ?? handle, bio }),
       });
       const data = (await res.json()) as { text?: string; error?: string };
       if (!res.ok || data.error) throw new Error(data.error ?? "Generation failed");
@@ -358,7 +362,7 @@ export default function AgentYap() {
         const genRes = await fetch("/api/generate-post", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ vibe, handle: profile?.username ?? handle, bio }),
+          body: JSON.stringify({ vibe, handle: username ?? handle, bio }),
         });
         const genData = (await genRes.json()) as { text?: string; error?: string };
         if (!genRes.ok || genData.error) throw new Error(genData.error ?? "Could not generate cast.");
@@ -369,7 +373,7 @@ export default function AgentYap() {
         ? {
             mode: "hub" as const,
             encryptedPrivKey: hubSigner.encryptedPrivKey,
-            fid: profile?.fid,
+            fid,
             text,
             vibe: vibe ?? "builder",
             isAgent: true,
@@ -377,7 +381,7 @@ export default function AgentYap() {
         : {
             mode: "neynar" as const,
             signerUuid,
-            fid: profile?.fid,
+            fid,
             text,
             vibe: vibe ?? "builder",
             isAgent: true,
@@ -806,7 +810,7 @@ export default function AgentYap() {
                   </div>
                   <div style={{ color: "#e0e0ff", fontSize: 14, lineHeight: 1.7 }}>
                     Vibe: <strong>{selectedVibe?.label ?? "Not selected"}</strong><br />
-                    Handle: <strong>@{profile?.username ?? handle}</strong><br />
+                    Handle: <strong>@{username ?? handle}</strong><br />
                     Attribution: <strong>🟦 AgentYap [HIP-1.0]</strong>
                   </div>
                 </div>
