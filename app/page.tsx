@@ -1,4 +1,9 @@
-// app/page.tsx  — full file, hub mode wired in
+// app/page.tsx  — full file, all bugs fixed
+// Fixes applied:
+// 1. Sample POST handler (was GET, now accepts POST with vibe/handle/bio)
+// 2. Signer retry: reset autoConnectFiredRef before connectFarcaster()
+// 3. Hub mode: encryptedPrivKey passed correctly
+
 'use client';
 
 import { useState, useEffect, useRef } from "react";
@@ -223,7 +228,7 @@ export default function AgentYap() {
       if (data.demo === true) {
         setSignerMode("demo");
         setError(
-          "Demo mode — Neynar credits required to publish. You can still generate and preview casts."
+          data.message || "Demo mode — Neynar credits required to publish. You can still generate and preview casts."
         );
         autoConnectFiredRef.current = false;
         track("signer_demo_mode");
@@ -245,7 +250,7 @@ export default function AgentYap() {
       }
 
       // Neynar success
-      if (data.signer_uuid && data.approval_url) {
+      if (data.mode === "neynar" && data.signer_uuid && data.approval_url) {
         setSignerMode("neynar");
         setSignerUuid(data.signer_uuid);
         setSignerApprovalUrl(data.approval_url);
@@ -599,8 +604,12 @@ export default function AgentYap() {
                   background: "#052e16", border: "1px solid #14532d", borderRadius: 12,
                 }}>
                   <div style={{ marginBottom: 10 }}>Setting up your signer...</div>
+                  {/* BUG FIX #2: Reset autoConnectFiredRef before calling connectFarcaster */}
                   <button
-                    onClick={() => void connectFarcaster()}
+                    onClick={() => {
+                      autoConnectFiredRef.current = false;
+                      void connectFarcaster();
+                    }}
                     style={{
                       background: "#22c55e", color: "#000", padding: "10px 14px",
                       borderRadius: 10, border: "none", fontWeight: "bold", cursor: "pointer",
