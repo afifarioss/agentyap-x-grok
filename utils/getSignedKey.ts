@@ -1,12 +1,45 @@
-import neynarClient from "@/lib/neynarClient";
+// utils/getSignedKey.ts
 import { ViemLocalEip712Signer } from "@farcaster/hub-nodejs";
 import { bytesToHex, hexToBytes } from "viem";
 import { mnemonicToAccount } from "viem/accounts";
 import { getFid } from "./getFid";
 
-export const getSignedKey = async () => {
-  const createSigner = await neynarClient.createSigner();
+const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY;
+const NEYNAR_API_URL = "https://api.neynar.com/v2";
 
+if (!NEYNAR_API_KEY) {
+  throw new Error("NEYNAR_API_KEY is not defined");
+}
+
+// Direct fetch with explicit API key header
+const neynarFetch = async (path: string, body?: object) => {
+  const res = await fetch(`${NEYNAR_API_URL}${path}`, {
+    method: body ? "POST" : "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": NEYNAR_API_KEY!,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    console.error("[neynarFetch] error:", res.status, data);
+    throw Object.assign(new Error(data.message || "Neynar error"), {
+      status: res.status,
+      data,
+    });
+  }
+
+  return data;
+};
+
+export const getSignedKey = async () => {
+  // Step 1: Create signer
+  const createSigner = await neynarFetch("/farcaster/signer", {});
+
+  // Step 2: Generate signature with mnemonic
   const { deadline, signature } = await generateSignature(
     createSigner.public_key
   );
@@ -17,9 +50,10 @@ export const getSignedKey = async () => {
 
   const fid = await getFid();
 
-  const signedKey = await neynarClient.registerSignedKey({
-    signerUuid: createSigner.signer_uuid,
-    appFid: fid,
+  // Step 3: Register signed key
+  const signedKey = await neynarFetch("/farcaster/signer", {
+    signer_uuid: createSigner.signer_uuid,
+    app_fid: fid,
     deadline,
     signature,
   });
