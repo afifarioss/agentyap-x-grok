@@ -129,7 +129,7 @@ export default function AgentYap() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  const connectFarcaster = useCallback(async (): Promise<void> => {
+    const connectFarcaster = useCallback(async (): Promise<void> => {
     if (!isAuthenticated || !profile?.fid) {
       setError("Sign in with Farcaster first.");
       return;
@@ -144,6 +144,62 @@ export default function AgentYap() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fid: profile.fid, username: profile.username ?? handle }),
       });
+
+      const data = (await res.json()) as {
+        mode?: string;
+        demo?: boolean;
+        message?: string;
+        signer_uuid?: string;
+        approval_url?: string;
+        publicKey?: string;
+        encryptedPrivKey?: string;
+        addKeyCalldata?: string;
+        keyRegistryAddress?: string;
+      };
+
+      if (data.demo === true) {
+        setSignerMode("demo");
+        setError(
+          data.message || "Demo mode — Neynar credits required to publish. You can still generate and preview casts."
+        );
+        autoConnectFiredRef.current = false;
+        track("signer_demo_mode");
+        return;
+      }
+
+      if (data.mode === "hub" && data.publicKey && data.encryptedPrivKey) {
+        setSignerMode("hub");
+        setHubSigner({
+          publicKey: data.publicKey,
+          encryptedPrivKey: data.encryptedPrivKey,
+          addKeyCalldata: data.addKeyCalldata ?? "",
+          keyRegistryAddress: data.keyRegistryAddress ?? "",
+        });
+        setStep("hub-register");
+        track("signer_hub_mode", { publicKey: data.publicKey });
+        return;
+      }
+
+      if (data.mode === "neynar" && data.signer_uuid && data.approval_url) {
+        setSignerMode("neynar");
+        setSignerUuid(data.signer_uuid);
+        setSignerApprovalUrl(data.approval_url);
+        setSignerStatus("pending");
+        setStep("signer");
+        track("signer_created", { signerUuid: data.signer_uuid });
+        return;
+      }
+
+      throw new Error(data.message ?? "Unknown signer response");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Something went wrong.";
+      setError(msg);
+      autoConnectFiredRef.current = false;
+      track("signer_create_error", { message: msg });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, profile?.fid, profile?.username, handle]);
+
 
       const data = (await res.json()) as {
         mode?: string;
