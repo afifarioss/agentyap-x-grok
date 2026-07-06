@@ -1,7 +1,6 @@
-567// lib/agent-brain.ts - Autonomous agent heartbeat logic
+// lib/agent-brain.ts - Autonomous agent heartbeat logic
 import { generateVibeCast } from "./openai";
 import { recordCast, canPostNow, getMemory } from "./agent-memory";
-import { getFid } from "@/utils/getFid";
 
 const VIBES = ["builder", "degen", "creator", "family"];
 const AGENT_FID = parseInt(process.env.FARCASTER_DEVELOPER_FID || "0", 10);
