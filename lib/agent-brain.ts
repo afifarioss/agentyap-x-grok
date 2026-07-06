@@ -1,60 +1,107 @@
-// lib/agent-brain.ts - Autonomous agent heartbeat logic
-import { generateVibeCast } from "./openai";
-import { recordCast, canPostNow, getMemory } from "./agent-memory";
+import { Redis } from "@upstash/redis";
+import { openai } from "./openai";
+import { getAgentMemory } from "./agent-memory";
 
-const VIBES = ["builder", "degen", "creator", "family"];
-const AGENT_FID = parseInt(process.env.FARCASTER_DEVELOPER_FID || "0", 10);
+// ─── Types ─────────────────────────────────────────────────────────
 
-/**
- * Heartbeat: Fired every 6 hours by Vercel Cron
- * - Checks if agent can post
- * - Generates a vibe-based cast
- * - Records it in memory
- */
-export async function heartbeat() {
+export interface AgentBrain {
+  model: string;
+  context: Record<string, unknown>;
+  lastHeartbeat?: string;
+}
+
+export interface BrainState {
+  persona: string;
+  mood: string;
+  recentInteractions: number;
+}
+
+// ─── Redis Client (using your Upstash env vars) ────────────────────
+
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
+
+// ─── Core Brain Functions ──────────────────────────────────────────
+
+export function getAgentBrain(): AgentBrain {
+  return {
+    model: process.env.OPENROUTER_API_KEY ? "openrouter" : "default",
+    context: {},
+  };
+}
+
+export async function getBrainState(): Promise<BrainState | null> {
+  const state = await redis.get<BrainState>("agent:brain:state");
+  return state ?? null;
+}
+
+export async function updateBrainState(partial: Partial<BrainState>): Promise<void> {
+  const current = await getBrainState();
+  const next = { ...current, ...partial } as BrainState;
+  await redis.set("agent:brain:state", next);
+}
+
+// ─── Heartbeat (keeps the agent alive / cron job) ─────────────────
+
+export async function heartbeat(): Promise<{
+  status: "ok" | "error";
+  timestamp: string;
+  agentState?: BrainState;
+}> {
   try {
-    if (!AGENT_FID || AGENT_FID === 0) {
-      return { status: "skipped", reason: "FARCASTER_DEVELOPER_FID not set" };
-    }
+    const timestamp = new Date().toISOString();
+    
+    // Update last heartbeat in Redis
+    await redis.set("agent:last_heartbeat", timestamp);
+    
+    // Optional: refresh memory, check queue, etc.
+    const memory = await getAgentMemory();
+    const state = await getBrainState();
 
-    const memory = await getMemory(AGENT_FID);
-    const { allowed, reason } = await canPostNow(AGENT_FID);
-
-    if (!allowed) {
-      return { status: "skipped", reason };
-    }
-
-    // Pick a random vibe
-    const vibe = VIBES[Math.floor(Math.random() * VIBES.length)];
-
-    // Generate cast
-    const castText = await generateVibeCast(vibe, "afifarioss", "", "");
-
-    // Record in memory
-    await recordCast(AGENT_FID, {
-      hash: `local_${Date.now()}`, // Placeholder
-      text: castText,
-      fid: AGENT_FID,
-      vibe,
-      isAgent: true,
-      timestamp: Date.now(),
-    });
+    // Log the pulse (remove in production if too noisy)
+    console.log(`[Agent Heartbeat] ${timestamp} — Memory entries: ${memory?.length ?? 0}`);
 
     return {
       status: "ok",
-      vibe,
-      cast: castText,
-      memory: {
-        totalCasts: memory.totalCasts + 1,
-        agentCasts: memory.agentCasts + 1,
-        dailyCastCount: memory.dailyCastCount + 1,
-      },
+      timestamp,
+      agentState: state ?? undefined,
     };
-  } catch (err) {
-    console.error("[heartbeat] error:", err);
+  } catch (error) {
+    console.error("[Agent Heartbeat] Failed:", error);
     return {
       status: "error",
-      error: err instanceof Error ? err.message : "Unknown error",
+      timestamp: new Date().toISOString(),
     };
   }
 }
+
+// ─── AI Response Generator ─────────────────────────────────────────
+
+export async function think(input: string, context?: string): Promise<string> {
+  if (!process.env.OPENROUTER_API_KEY) {
+    throw new Error("OPENROUTER_API_KEY is not set");
+  }
+
+  // You can swap this for your actual OpenRouter call in openai.ts
+  const response = await openai.chat.completions.create({
+    model: "openai/gpt-4o-mini",
+    messages: [
+      { role: "system", content: context || "You are a helpful Farcaster agent." },
+      { role: "user", content: input },
+    ],
+  });
+
+  return response.choices[0]?.message?.content || "Hmm, I'm speechless.";
+}
+
+// ─── Export default for convenience ────────────────────────────────
+
+export default {
+  getAgentBrain,
+  getBrainState,
+  updateBrainState,
+  heartbeat,
+  think,
+};
