@@ -99,8 +99,10 @@ Return only the cast text. No quotes. No preamble. Under 280 characters.`;
 function fallbackCast(
   vibe: string,
   extraContext: string = "",
-  _isAgent: boolean = true
+  isAgent: boolean = true
 ): string {
+  void isAgent; // intentionally used as parameter for API compatibility
+
   const FALLBACKS: Record<string, string> = {
     builder:
       "Shipping on Base. No announcements, just commits. Code is the roadmap.",
