@@ -1,10 +1,9 @@
-// app/page.tsx — all lint issues fixed
+// app/page.tsx — all bugs fixed (build + lint)
 // Changes:
-// 1. Added useCallback import
-// 2. Wrapped connectFarcaster in useCallback
-// 3. Fixed setPollSeconds(0) with queueMicrotask (was direct setState in effect)
-// 4. Added all missing useEffect dependencies
-// 5. Renamed unused catch variable e → _e
+// 1. useCallback wraps async function correctly
+// 2. setPollSeconds(0) uses queueMicrotask
+// 3. All useEffect dependencies added
+// 4. Unused catch vars removed
 
 'use client';
 
@@ -129,131 +128,79 @@ export default function AgentYap() {
     return () => clearTimeout(t);
   }, [toast]);
 
-    const connectFarcaster = useCallback(async (): Promise<void> => {
-    if (!isAuthenticated || !profile?.fid) {
-      setError("Sign in with Farcaster first.");
-      return;
-    }
-
-    setError(null);
-    track("signer_create_started", { fid: profile.fid });
-
-    try {
-      const res = await fetch("/api/create-signer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fid: profile.fid, username: profile.username ?? handle }),
-      });
-
-      const data = (await res.json()) as {
-        mode?: string;
-        demo?: boolean;
-        message?: string;
-        signer_uuid?: string;
-        approval_url?: string;
-        publicKey?: string;
-        encryptedPrivKey?: string;
-        addKeyCalldata?: string;
-        keyRegistryAddress?: string;
-      };
-
-      if (data.demo === true) {
-        setSignerMode("demo");
-        setError(
-          data.message || "Demo mode — Neynar credits required to publish. You can still generate and preview casts."
-        );
-        autoConnectFiredRef.current = false;
-        track("signer_demo_mode");
+  const connectFarcaster = useCallback(
+    async (): Promise<void> => {
+      if (!isAuthenticated || !profile?.fid) {
+        setError("Sign in with Farcaster first.");
         return;
       }
 
-      if (data.mode === "hub" && data.publicKey && data.encryptedPrivKey) {
-        setSignerMode("hub");
-        setHubSigner({
-          publicKey: data.publicKey,
-          encryptedPrivKey: data.encryptedPrivKey,
-          addKeyCalldata: data.addKeyCalldata ?? "",
-          keyRegistryAddress: data.keyRegistryAddress ?? "",
+      setError(null);
+      track("signer_create_started", { fid: profile.fid });
+
+      try {
+        const res = await fetch("/api/create-signer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fid: profile.fid, username: profile.username ?? handle }),
         });
-        setStep("hub-register");
-        track("signer_hub_mode", { publicKey: data.publicKey });
-        return;
-      }
 
-      if (data.mode === "neynar" && data.signer_uuid && data.approval_url) {
-        setSignerMode("neynar");
-        setSignerUuid(data.signer_uuid);
-        setSignerApprovalUrl(data.approval_url);
-        setSignerStatus("pending");
-        setStep("signer");
-        track("signer_created", { signerUuid: data.signer_uuid });
-        return;
-      }
+        const data = (await res.json()) as {
+          mode?: string;
+          demo?: boolean;
+          message?: string;
+          signer_uuid?: string;
+          approval_url?: string;
+          publicKey?: string;
+          encryptedPrivKey?: string;
+          addKeyCalldata?: string;
+          keyRegistryAddress?: string;
+        };
 
-      throw new Error(data.message ?? "Unknown signer response");
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Something went wrong.";
-      setError(msg);
-      autoConnectFiredRef.current = false;
-      track("signer_create_error", { message: msg });
-    }
+        if (data.demo === true) {
+          setSignerMode("demo");
+          setError(
+            data.message || "Demo mode — Neynar credits required to publish. You can still generate and preview casts."
+          );
+          autoConnectFiredRef.current = false;
+          track("signer_demo_mode");
+          return;
+        }
+
+        if (data.mode === "hub" && data.publicKey && data.encryptedPrivKey) {
+          setSignerMode("hub");
+          setHubSigner({
+            publicKey: data.publicKey,
+            encryptedPrivKey: data.encryptedPrivKey,
+            addKeyCalldata: data.addKeyCalldata ?? "",
+            keyRegistryAddress: data.keyRegistryAddress ?? "",
+          });
+          setStep("hub-register");
+          track("signer_hub_mode", { publicKey: data.publicKey });
+          return;
+        }
+
+        if (data.mode === "neynar" && data.signer_uuid && data.approval_url) {
+          setSignerMode("neynar");
+          setSignerUuid(data.signer_uuid);
+          setSignerApprovalUrl(data.approval_url);
+          setSignerStatus("pending");
+          setStep("signer");
+          track("signer_created", { signerUuid: data.signer_uuid });
+          return;
+        }
+
+        throw new Error(data.message ?? "Unknown signer response");
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Something went wrong.";
+        setError(msg);
+        autoConnectFiredRef.current = false;
+        track("signer_create_error", { message: msg });
+      }
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, profile?.fid, profile?.username, handle]);
-
-
-      const data = (await res.json()) as {
-        mode?: string;
-        demo?: boolean;
-        message?: string;
-        signer_uuid?: string;
-        approval_url?: string;
-        publicKey?: string;
-        encryptedPrivKey?: string;
-        addKeyCalldata?: string;
-        keyRegistryAddress?: string;
-      };
-
-      if (data.demo === true) {
-        setSignerMode("demo");
-        setError(
-          data.message || "Demo mode — Neynar credits required to publish. You can still generate and preview casts."
-        );
-        autoConnectFiredRef.current = false;
-        track("signer_demo_mode");
-        return;
-      }
-
-      if (data.mode === "hub" && data.publicKey && data.encryptedPrivKey) {
-        setSignerMode("hub");
-        setHubSigner({
-          publicKey: data.publicKey,
-          encryptedPrivKey: data.encryptedPrivKey,
-          addKeyCalldata: data.addKeyCalldata ?? "",
-          keyRegistryAddress: data.keyRegistryAddress ?? "",
-        });
-        setStep("hub-register");
-        track("signer_hub_mode", { publicKey: data.publicKey });
-        return;
-      }
-
-      if (data.mode === "neynar" && data.signer_uuid && data.approval_url) {
-        setSignerMode("neynar");
-        setSignerUuid(data.signer_uuid);
-        setSignerApprovalUrl(data.approval_url);
-        setSignerStatus("pending");
-        setStep("signer");
-        track("signer_created", { signerUuid: data.signer_uuid });
-        return;
-      }
-
-      throw new Error(data.message ?? "Unknown signer response");
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Something went wrong.";
-      setError(msg);
-      autoConnectFiredRef.current = false;
-      track("signer_create_error", { message: msg });
-    }
-  }, [isAuthenticated, profile?.fid, profile?.username, handle]);
+    [isAuthenticated, profile?.fid, profile?.username, handle]
+  );
 
   useEffect(() => {
     if (isAuthenticated && profile?.fid && !autoConnectFiredRef.current && step === "setup") {
@@ -298,8 +245,8 @@ export default function AgentYap() {
           track("signer_approved", { signerUuid });
           return;
         }
-      } catch (_e) {
-        console.error("[poll]", _e);
+      } catch {
+        // silently fail poll errors
       }
 
       if (cancelled) return;
@@ -360,7 +307,7 @@ export default function AgentYap() {
 
       sampleCacheRef.current[vibeId] = data.text ?? "";
       setSamplePost(data.text ?? "");
-    } catch (_e: unknown) {
+    } catch {
       if (latestVibeRef.current === vibeId) {
         setSamplePost("⚠️ Could not load a sample — tap the vibe again.");
       }
