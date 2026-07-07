@@ -503,11 +503,17 @@ export default function AgentYap() {
             </div>
 
             <div style={{ fontSize: 34, fontWeight: "bold", lineHeight: 1.1 }}>AgentYap</div>
+            {/* CHANGED: Headline now benefit-driven */}
             <div style={{ fontSize: 18, color: "#c4b5fd", marginTop: 8, lineHeight: 1.4 }}>
-              Hybrid Identity Protocol for Farcaster builders.
+              Turn rough ideas into Farcaster casts — with AI assistance clearly marked.
             </div>
+            {/* CHANGED: Added subheadline */}
+            <div style={{ fontSize: 14, color: "#71717a", marginTop: 6, lineHeight: 1.5 }}>
+              Built for builders who want to stay visible without pretending AI did not help.
+            </div>
+            {/* CHANGED: Fixed hero sentence */}
             <p style={{ color: "#a1a1aa", lineHeight: 1.7, marginTop: 14 }}>
-              AI generates. You approve. 🟦 marks it onchain-attributed.
+              AI generates. You approve. AgentYap marks every cast as AI-assisted.
               Every cast is human-approved before it leaves your account.
             </p>
             <p style={{ color: "#71717a", fontSize: 13, lineHeight: 1.6 }}>
@@ -538,6 +544,34 @@ export default function AgentYap() {
                   Posting every day is hard. AgentYap turns rough ideas into clean Farcaster casts —
                   without losing your voice. AI assists. You approve. 🟦 marks the attribution.
                 </p>
+              </section>
+
+              {/* CHANGED: Added "How it works" 3-step block */}
+              <section style={cardStyle}>
+                <div style={labelStyle}>HOW IT WORKS</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: "50%", background: "#1f2937", color: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: "bold", flexShrink: 0 }}>1</div>
+                    <div>
+                      <div style={{ color: "#e0e0ff", fontWeight: "bold", fontSize: 14 }}>Write rough idea</div>
+                      <div style={{ color: "#a1a1aa", fontSize: 13 }}>Drop half-baked thoughts. No perfection needed.</div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: "50%", background: "#1f2937", color: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: "bold", flexShrink: 0 }}>2</div>
+                    <div>
+                      <div style={{ color: "#e0e0ff", fontWeight: "bold", fontSize: 14 }}>Pick your vibe</div>
+                      <div style={{ color: "#a1a1aa", fontSize: 13 }}>Builder, Degen, Creator, or Family Man.</div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: "50%", background: "#1f2937", color: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: "bold", flexShrink: 0 }}>3</div>
+                    <div>
+                      <div style={{ color: "#e0e0ff", fontWeight: "bold", fontSize: 14 }}>Approve and post to Farcaster</div>
+                      <div style={{ color: "#a1a1aa", fontSize: 13 }}>AI drafts. You own it. One tap to publish.</div>
+                    </div>
+                  </div>
+                </div>
               </section>
 
               <section style={cardStyle}>
@@ -603,10 +637,73 @@ export default function AgentYap() {
                   placeholder="Drop a rough idea. AgentYap will clean it up."
                   style={{ ...inputStyle, minHeight: 96, resize: "vertical" }}
                 />
+                {/* CHANGED: Added "Generate preview" button before sign-in */}
+                <button
+                  onClick={() => void handlePreview()}
+                  disabled={isPreviewLoading || !vibe}
+                  style={{
+                    marginTop: 14,
+                    width: "100%",
+                    background: isPreviewLoading || !vibe ? "#1f2937" : "#6366f1",
+                    color: "#fff",
+                    padding: "14px 16px",
+                    borderRadius: 10,
+                    border: "none",
+                    fontWeight: "bold",
+                    cursor: isPreviewLoading || !vibe ? "not-allowed" : "pointer",
+                    fontSize: 15,
+                  }}
+                >
+                  {isPreviewLoading ? "AgentYap is thinking..." : "Generate my first cast →"}
+                </button>
+              </section>
+
+              {/* CHANGED: Show preview in setup step before sign-in */}
+              {preview && (
+                <section style={{
+                  background: "#020617", padding: 16, marginBottom: 16,
+                  borderRadius: 12, whiteSpace: "pre-wrap",
+                  border: "1px solid #22c55e", lineHeight: 1.7,
+                }}>
+                  <div style={{ fontSize: 11, color: "#22c55e", marginBottom: 8, letterSpacing: 0.6 }}>
+                    PREVIEW — HIP-1.0 ATTRIBUTED
+                  </div>
+                  {preview}
+                </section>
+              )}
+
+              {/* CHANGED: Added mock cast example */}
+              <section style={cardStyle}>
+                <div style={labelStyle}>EXAMPLE 🟦 CAST</div>
+                <div style={{
+                  background: "#020617", border: "1px solid #1f2937",
+                  borderRadius: 12, padding: 14,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #22c55e, #0ea5e9)" }} />
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: "bold", color: "#e0e0ff" }}>@afifarioss</div>
+                      <div style={{ fontSize: 11, color: "#52525b" }}>2h ago</div>
+                    </div>
+                  </div>
+                  <p style={{ color: "#d4d4d8", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+                    Just shipped a new feature on Base. Real talk: AI helped me draft this, but I approved every word. Family first. 💰
+                  </p>
+                  <div style={{ marginTop: 10, display: "flex", gap: 6 }}>
+                    <span style={{ fontSize: 11, background: "#1e3a5f", color: "#60a5fa", padding: "3px 8px", borderRadius: 999 }}>
+                      🟦 ai-assisted: AgentYap HIP-1.0
+                    </span>
+                  </div>
+                </div>
               </section>
 
               <section style={cardStyle}>
                 <div style={labelStyle}>🟦 HYBRID IDENTITY PROTOCOL</div>
+                {/* CHANGED: Added plain English HIP explanation */}
+                <p style={{ color: "#d4d4d8", lineHeight: 1.7, margin: 0, marginBottom: 10 }}>
+                  <strong>HIP = Hybrid Identity Protocol.</strong> Your identity stays human.
+                  AI helps write. You approve. AgentYap adds transparent attribution.
+                </p>
                 <p style={{ color: "#a1a1aa", lineHeight: 1.7, margin: 0 }}>
                   Every AI-assisted cast gets a 🟦 marker. No deception —
                   the marker is machine-readable cast metadata. Human still owns
@@ -616,12 +713,25 @@ export default function AgentYap() {
 
               {!isAuthenticated ? (
                 <div style={{ textAlign: "center", marginBottom: 30 }}>
-                  <div onClick={() => track("signin_clicked", { vibe: vibe ?? undefined })} style={{ marginBottom: 12 }}>
-                    <SignInButton />
-                  </div>
-                  <div style={{ fontSize: 12, color: "#71717a", lineHeight: 1.6 }}>
-                    Sign in with Farcaster to post your first 🟦 cast.
-                  </div>
+                  {preview ? (
+                    <>
+                      {/* CHANGED: CTA appears after preview is generated */}
+                      <div onClick={() => track("signin_clicked", { vibe: vibe ?? undefined })} style={{ marginBottom: 12 }}>
+                        <SignInButton />
+                      </div>
+                      <div style={{ fontSize: 12, color: "#71717a", lineHeight: 1.6 }}>
+                        Sign in with Farcaster to post this 🟦 cast.
+                      </div>
+                      {/* CHANGED: Added trust copy */}
+                      <div style={{ fontSize: 12, color: "#52525b", marginTop: 8, lineHeight: 1.6 }}>
+                        AgentYap never gets your private keys. You approve before anything posts.
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ fontSize: 12, color: "#71717a", lineHeight: 1.6, marginBottom: 30 }}>
+                      Pick a vibe and generate a preview first — no sign-in required.
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div style={{
