@@ -53,3 +53,4 @@ export const checkSigner = async (signerUuid: string) => {
     status: signer.status,
   };
 };
+
