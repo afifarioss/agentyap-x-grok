@@ -581,7 +581,10 @@ export default function AgentYap() {
             <div style={{ fontSize: 18, color: "#c4b5fd", marginTop: 8, lineHeight: 1.4 }}>
               AI assists. Human approves. Attribution stays clear.
             </div>
-            <p style={{ color: "#71717a", lineHeight: 1.7, marginTop: 10, fontSize: 13 }}>
+            <p style={{ color: "#a1a1aa", lineHeight: 1.7, marginTop: 10, fontSize: 14 }}>
+              Turn rough ideas into better Farcaster casts in your own voice.
+            </p>
+            <p style={{ color: "#71717a", lineHeight: 1.7, marginTop: 6, fontSize: 13 }}>
               No sign-in needed to preview.
             </p>
           </header>
@@ -665,7 +668,7 @@ export default function AgentYap() {
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Drop a rough idea. AgentYap will clean it up."
-                  style={{ ...inputStyle, minHeight: 96, resize: "vertical" }}
+                  style={{ ...inputStyle, minHeight: 96, resize: "vertical", marginBottom: 14 }}
                 />
                 <button
                   onClick={() => void handlePreview()}
@@ -976,7 +979,7 @@ export default function AgentYap() {
                   <div style={{ color: "#52525b", fontSize: 12 }}>4. You approve</div>
                 </div>
                 <p style={{ color: "#52525b", fontSize: 12, marginTop: 10, marginBottom: 0 }}>
-                  Why: this makes AgentYap feel personal, not generic.
+                  This helps AgentYap match your tone while keeping you in control.
                 </p>
               </section>
 
@@ -1470,7 +1473,7 @@ export default function AgentYap() {
           }}>
             🟦 AgentYap HIP-1.0 • Built by afifarioss on Base
             <br />
-            AI assists. You approve. Blockchain attributes.
+            AI assists. You approve. Attribution stays clear.
             <br />
             <span style={{ color: "#71717a", fontSize: 13, marginTop: 8, display: "inline-block" }}>
               AI assists. Human approves. Attribution stays clear.
