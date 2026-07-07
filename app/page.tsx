@@ -581,9 +581,6 @@ export default function AgentYap() {
             <p style={{ color: "#a1a1aa", lineHeight: 1.7, marginTop: 14 }}>
               AgentYap helps you post better Farcaster casts, but you stay in control.
             </p>
-            <p style={{ color: "#71717a", fontSize: 13, lineHeight: 1.6 }}>
-              Built by <strong style={{ color: "#e0e0ff" }}>afifarioss</strong> — Ipoh dad. Base builder. 3 kids.
-            </p>
           </header>
 
           {error && (
@@ -603,6 +600,40 @@ export default function AgentYap() {
 
           {step === "setup" && (
             <>
+              {/* ===== FOUNDER STORY ===== */}
+              <section style={cardStyle}>
+                <div style={labelStyle}>FOUNDER STORY</div>
+                <p style={{ color: "#d4d4d8", lineHeight: 1.7, margin: 0, marginBottom: 12 }}>
+                  Built by <strong style={{ color: "#e0e0ff" }}>afifarioss</strong> — dad of 3 from Ipoh.
+                </p>
+                <p style={{ color: "#a1a1aa", lineHeight: 1.7, margin: 0, marginBottom: 12 }}>
+                  I build AgentYap because I know the struggle. You ship all day. Fix bugs. Handle life. Then 10pm hits and you remember — shit, I haven't posted on Farcaster in three days.
+                </p>
+                <p style={{ color: "#a1a1aa", lineHeight: 1.7, margin: 0, marginBottom: 12 }}>
+                  I don't want bots pretending to be me. I want AI that helps me write faster, then shuts up. I read every cast before it goes out. The 🟦 marker? That's just honesty. No secrets.
+                </p>
+                <p style={{ color: "#a1a1aa", lineHeight: 1.7, margin: 0, marginBottom: 12 }}>
+                  My kids don't care about my follower count. They care that I'm there. So I build tools that save me time, not steal it.
+                </p>
+                <p style={{ color: "#d4d4d8", lineHeight: 1.7, margin: 0 }}>
+                  Family first. Always shipping. 💰
+                </p>
+                <div style={{ marginTop: 14 }}>
+                  <a
+                    href="https://x.com/afifarioss"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      color: "#60a5fa",
+                      fontSize: 13,
+                      textDecoration: "none",
+                    }}
+                  >
+                    Follow me on X → @afifarioss
+                  </a>
+                </div>
+              </section>
+
               {/* ===== INPUT + VIBE SELECTOR ===== */}
               <section style={cardStyle}>
                 <div style={labelStyle}>FARCASTER HANDLE</div>
@@ -821,15 +852,6 @@ export default function AgentYap() {
                     ✓ You can disconnect the signer anytime.
                   </div>
                 </div>
-              </section>
-
-              {/* ===== FOUNDER NOTE ===== */}
-              <section style={cardStyle}>
-                <div style={labelStyle}>FOUNDER STORY</div>
-                <p style={{ color: "#d4d4d8", lineHeight: 1.7, margin: 0 }}>
-                  Built by <strong style={{ color: "#e0e0ff" }}>afifarioss</strong> — dad of 3 from Ipoh, building tools for Farcaster creators and Base builders.
-                  Family first. Always shipping.
-                </p>
               </section>
 
               {/* ===== WHO IS THIS FOR? ===== */}
