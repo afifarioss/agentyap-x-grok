@@ -563,6 +563,37 @@ export default function AgentYap() {
                 </div>
               </section>
 
+              {/* EXAMPLE CAST — on the landing page */}
+              <section style={cardStyle}>
+                <div style={labelStyle}>EXAMPLE OUTPUT</div>
+                <div style={{
+                  background: "#020617", border: "1px solid #1f2937",
+                  borderRadius: 12, padding: 14,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #22c55e, #0ea5e9)" }} />
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: "bold", color: "#e0e0ff" }}>@afifarioss</div>
+                      <div style={{ fontSize: 11, color: "#52525b" }}>2h ago</div>
+                    </div>
+                  </div>
+                  <p style={{ color: "#d4d4d8", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+                    Building AgentYap in public from Ipoh.<br />
+                    Small tool, simple mission: help Farcaster builders post consistently without losing their own voice.<br />
+                    AI assists. Human approves. Attribution stays clear.
+                  </p>
+                  <div style={{ marginTop: 10, display: "flex", gap: 6 }}>
+                    <span style={{ fontSize: 11, background: "#1e3a5f", color: "#60a5fa", padding: "3px 8px", borderRadius: 999 }}>
+                      🟦 AgentYap HIP-1.0
+                    </span>
+                  </div>
+                </div>
+                <p style={{ color: "#71717a", fontSize: 12, marginTop: 10, lineHeight: 1.5, marginBottom: 0 }}>
+                  Each AI-assisted cast gets a transparent marker, so people can see it was created with AgentYap.
+                  Attribution marker coming soon on Base.
+                </p>
+              </section>
+
               <section style={cardStyle}>
                 <div style={labelStyle}>WHY AGENTYAP EXISTS</div>
                 <p style={{ color: "#d4d4d8", lineHeight: 1.7, margin: 0 }}>
@@ -669,31 +700,6 @@ export default function AgentYap() {
                     </div>
                   </section>
 
-                  {/* EXAMPLE 🟦 CAST */}
-                  <section style={cardStyle}>
-                    <div style={labelStyle}>EXAMPLE 🟦 CAST</div>
-                    <div style={{
-                      background: "#020617", border: "1px solid #1f2937",
-                      borderRadius: 12, padding: 14,
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #22c55e, #0ea5e9)" }} />
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: "bold", color: "#e0e0ff" }}>@afifarioss</div>
-                          <div style={{ fontSize: 11, color: "#52525b" }}>2h ago</div>
-                        </div>
-                      </div>
-                      <p style={{ color: "#d4d4d8", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
-                        Just shipped a new feature on Base. Real talk: AI helped me draft this, but I approved every word. Family first. 💰
-                      </p>
-                      <div style={{ marginTop: 10, display: "flex", gap: 6 }}>
-                        <span style={{ fontSize: 11, background: "#1e3a5f", color: "#60a5fa", padding: "3px 8px", borderRadius: 999 }}>
-                          🟦 ai-assisted: AgentYap HIP-1.0
-                        </span>
-                      </div>
-                    </div>
-                  </section>
-
                   {/* HIP EXPLANATION */}
                   <section style={cardStyle}>
                     <div style={labelStyle}>🟦 HYBRID IDENTITY PROTOCOL</div>
@@ -721,8 +727,17 @@ export default function AgentYap() {
                       <div style={{ fontSize: 12, color: "#71717a", lineHeight: 1.6 }}>
                         Sign in with Farcaster to post this 🟦 cast.
                       </div>
-                      <div style={{ fontSize: 12, color: "#52525b", marginTop: 8, lineHeight: 1.6 }}>
-                        AgentYap never gets your private keys. You approve before anything posts.
+                      {/* SIGNER TRUST COPY */}
+                      <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+                        <div style={{ fontSize: 12, color: "#52525b", lineHeight: 1.5 }}>
+                          ✓ AgentYap never holds your private keys.
+                        </div>
+                        <div style={{ fontSize: 12, color: "#52525b", lineHeight: 1.5 }}>
+                          ✓ Nothing posts without your approval.
+                        </div>
+                        <div style={{ fontSize: 12, color: "#52525b", lineHeight: 1.5 }}>
+                          ✓ You can disconnect the signer anytime.
+                        </div>
                       </div>
                     </>
                   ) : (
