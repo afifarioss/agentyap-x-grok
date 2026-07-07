@@ -46,6 +46,7 @@ export const getSignedKey = async () => {
   // Handle pending approval — return to frontend for QR code / Warpcast link
   if (createSigner.status === "pending_approval" && createSigner.approval_url) {
     return {
+      mode: "neynar", // <-- ADDED: tells frontend this is a neynar-managed signer
       status: "pending_approval",
       signer_uuid: createSigner.signer_uuid,
       public_key: createSigner.public_key,
@@ -61,6 +62,7 @@ export const getSignedKey = async () => {
   // Fallback: try to register anyway (some Neynar versions return different shapes)
   if (createSigner.signer_uuid && createSigner.public_key) {
     return {
+      mode: "neynar", // <-- ADDED: tells frontend this is a neynar-managed signer
       status: "pending_approval",
       signer_uuid: createSigner.signer_uuid,
       public_key: createSigner.public_key,
@@ -95,6 +97,7 @@ const registerSignedKey = async (signerUuid: string, publicKey: string) => {
   });
 
   return {
+    mode: "neynar", // <-- ADDED: tells frontend this is a neynar-managed signer
     status: "registered",
     signer_uuid: signedKey.signer_uuid || signerUuid,
     fid: signedKey.fid || fid,
