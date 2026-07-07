@@ -1,13 +1,3 @@
-// app/page.tsx — all bugs fixed (build + lint + React Compiler)
-// Changes:
-// 1. Destructure profile to fix React Compiler memoization
-// 2. useCallback has correct async syntax
-// 3. setPollSeconds(0) uses queueMicrotask
-// 4. All useEffect dependencies added
-// 5. Unused catch vars removed
-// 6. FIX: handle "generated" signer status (no approval_url yet) by retrying
-//    create-signer automatically instead of throwing "Unknown signer response"
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -36,10 +26,10 @@ const PROMPT_IDEAS = [
   "I'm building AgentYap in public as a dad of 3.",
 ];
 
-const MAX_POLL_ATTEMPTS = 60;
-const POLL_INTERVAL_MS = 5000;
-const BACKOFF_AFTER_ATTEMPTS = 6;
-const BACKOFF_INTERVAL_MS = 10000;
+const MAX_POLL_ATTEMPTS = 15;
+const POLL_INTERVAL_MS = 2000;
+const BACKOFF_AFTER_ATTEMPTS = 8;
+const BACKOFF_INTERVAL_MS = 3000;
 const MAX_GENERATING_RETRIES = 15;
 const GENERATING_RETRY_DELAY_MS = 3000;
 
@@ -75,7 +65,6 @@ function makePostId(): string {
 export default function AgentYap() {
   const { isAuthenticated, profile } = useProfile();
 
-  // Destructure profile for stable dependencies
   const fid = profile?.fid;
   const username = profile?.username;
 
@@ -191,7 +180,6 @@ export default function AgentYap() {
           return;
         }
 
-        // Backend returns mode:"neynar" with a real approval_url once it's ready
         if (data.mode === "neynar" && data.signer_uuid && data.approval_url) {
           generatingRetriesRef.current = 0;
           setSignerMode("neynar");
@@ -203,9 +191,6 @@ export default function AgentYap() {
           return;
         }
 
-        // NEW: Neynar's signer sometimes comes back "generated" — created but the
-        // approval_url isn't attached yet. Don't error, just retry create-signer
-        // a few times with a short delay instead of throwing.
         if (data.mode === "neynar" && data.status === "generated" && data.signer_uuid) {
           if (generatingRetriesRef.current < MAX_GENERATING_RETRIES) {
             generatingRetriesRef.current += 1;
@@ -241,7 +226,6 @@ export default function AgentYap() {
     }
   }, [isAuthenticated, fid, username, step, connectFarcaster]);
 
-  // Neynar signer polling
   useEffect(() => {
     if (step !== "signer" || signerStatus !== "pending" || !signerUuid) return;
 
