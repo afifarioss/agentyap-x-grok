@@ -54,11 +54,9 @@ export const checkSigner = async (signerUuid: string) => {
   };
 };
 
-// ADDED BACK: This is used by app/api/complete-signer/route.ts
+// ADDED BACK — required by app/api/complete-signer/route.ts
 export const registerSignedKeyAfterApproval = async (signerUuid: string, publicKey: string) => {
-  // For Neynar managed signers, this is a no-op
-  // The signer is already registered when user approves via Warpcast
-  console.log("[registerSignedKeyAfterApproval] Neynar managed signer, no action needed:", signerUuid);
+  console.log("[registerSignedKeyAfterApproval] Neynar managed signer approved:", signerUuid);
   return {
     mode: "neynar",
     status: "registered",
