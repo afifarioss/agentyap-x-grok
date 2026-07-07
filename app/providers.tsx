@@ -2,11 +2,13 @@
 
 import { PrivyProvider } from '@privy-io/react-auth';
 import { AuthKitProvider } from '@farcaster/auth-kit';
+import '@farcaster/auth-kit/styles.css';
 import { base } from 'viem/chains';
 
 const farcasterConfig = {
   rpcUrl: 'https://mainnet.optimism.io',
   domain: 'agentyap-x-grok.vercel.app',
+  siweUri: 'https://agentyap-x-grok.vercel.app/login',
 };
 
 export function Providers({ children }: { children: React.ReactNode }) {
