@@ -563,6 +563,7 @@ export default function AgentYap() {
             }
           `}</style>
 
+          {/* ===== HERO ===== */}
           <header style={{ marginBottom: 24, paddingTop: 12 }}>
             <div style={{
               display: "inline-flex", alignItems: "center", gap: 8,
@@ -577,12 +578,8 @@ export default function AgentYap() {
             <div style={{ fontSize: 18, color: "#c4b5fd", marginTop: 8, lineHeight: 1.4 }}>
               Turn rough ideas into Farcaster casts — with AI assistance clearly marked.
             </div>
-            <div style={{ fontSize: 14, color: "#71717a", marginTop: 6, lineHeight: 1.5 }}>
-              Built for builders who want to stay visible without pretending AI did not help.
-            </div>
             <p style={{ color: "#a1a1aa", lineHeight: 1.7, marginTop: 14 }}>
-              AI generates. You approve. AgentYap marks every cast as AI-assisted.
-              Every cast is human-approved before it leaves your account.
+              AgentYap helps you post better Farcaster casts, but you stay in control.
             </p>
             <p style={{ color: "#71717a", fontSize: 13, lineHeight: 1.6 }}>
               Built by <strong style={{ color: "#e0e0ff" }}>afifarioss</strong> — Ipoh dad. Base builder. 3 kids.
@@ -606,89 +603,7 @@ export default function AgentYap() {
 
           {step === "setup" && (
             <>
-              {/* FOUNDER STORY */}
-              <section style={cardStyle}>
-                <div style={labelStyle}>FOUNDER STORY</div>
-                <p style={{ color: "#d4d4d8", lineHeight: 1.7, margin: 0 }}>
-                  Built by <strong style={{ color: "#e0e0ff" }}>afifarioss</strong> — dad of 3 from Ipoh, building tools for Farcaster creators and Base builders.
-                  Family first. Always shipping.
-                </p>
-              </section>
-
-              {/* HOW IT WORKS — 3 cards */}
-              <section style={cardStyle}>
-                <div style={labelStyle}>HOW IT WORKS</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {HOW_IT_WORKS.map((item) => (
-                    <div key={item.num} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                      <div style={{
-                        width: 28, height: 28, borderRadius: "50%", background: "#1f2937",
-                        color: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 12, fontWeight: "bold", flexShrink: 0,
-                      }}>
-                        {item.num}
-                      </div>
-                      <div>
-                        <div style={{ color: "#e0e0ff", fontWeight: "bold", fontSize: 14 }}>{item.title}</div>
-                        <div style={{ color: "#a1a1aa", fontSize: 13, lineHeight: 1.5 }}>{item.desc}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* WHO IS THIS FOR? */}
-              <section style={cardStyle}>
-                <div style={labelStyle}>WHO IS THIS FOR?</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {WHO_IS_THIS_FOR.map((item) => (
-                    <div key={item} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ color: "#22c55e", fontSize: 14 }}>•</span>
-                      <span style={{ color: "#a1a1aa", fontSize: 14 }}>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* EXAMPLE CAST — on the landing page */}
-              <section style={cardStyle}>
-                <div style={labelStyle}>EXAMPLE OUTPUT</div>
-                <div style={{
-                  background: "#020617", border: "1px solid #1f2937",
-                  borderRadius: 12, padding: 14,
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #22c55e, #0ea5e9)" }} />
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: "bold", color: "#e0e0ff" }}>@afifarioss</div>
-                      <div style={{ fontSize: 11, color: "#52525b" }}>2h ago</div>
-                    </div>
-                  </div>
-                  <p style={{ color: "#d4d4d8", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
-                    Building AgentYap in public from Ipoh.<br />
-                    Small tool, simple mission: help Farcaster builders post consistently without losing their own voice.<br />
-                    AI assists. Human approves. Attribution stays clear.
-                  </p>
-                  <div style={{ marginTop: 10, display: "flex", gap: 6 }}>
-                    <span style={{ fontSize: 11, background: "#1e3a5f", color: "#60a5fa", padding: "3px 8px", borderRadius: 999 }}>
-                      🟦 AgentYap HIP-1.0
-                    </span>
-                  </div>
-                </div>
-                <p style={{ color: "#71717a", fontSize: 12, marginTop: 10, lineHeight: 1.5, marginBottom: 0 }}>
-                  Each AI-assisted cast gets a transparent marker, so people can see it was created with AgentYap.
-                  Attribution marker coming soon on Base.
-                </p>
-              </section>
-
-              <section style={cardStyle}>
-                <div style={labelStyle}>WHY AGENTYAP EXISTS</div>
-                <p style={{ color: "#d4d4d8", lineHeight: 1.7, margin: 0 }}>
-                  Posting every day is hard. AgentYap turns rough ideas into clean Farcaster casts —
-                  without losing your voice. AI assists. You approve. 🟦 marks the attribution.
-                </p>
-              </section>
-
+              {/* ===== INPUT + VIBE SELECTOR ===== */}
               <section style={cardStyle}>
                 <div style={labelStyle}>FARCASTER HANDLE</div>
                 <input
@@ -772,86 +687,7 @@ export default function AgentYap() {
                 </button>
               </section>
 
-              {/* DAILY CAST MODE */}
-              {vibe && (
-                <section style={cardStyle}>
-                  <div style={labelStyle}>DAILY CAST MODE</div>
-                  <p style={{ color: "#a1a1aa", fontSize: 13, lineHeight: 1.6, marginTop: 0, marginBottom: 12 }}>
-                    Stuck on what to post? Generate 3 daily cast ideas from your bio.
-                  </p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-                    {DAILY_CAST_TYPES.map((t) => (
-                      <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, color: "#a1a1aa", fontSize: 13 }}>
-                        <span>{t.label}</span>
-                        <span style={{ color: "#52525b" }}>— {t.desc}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    onClick={() => void handleDailyCasts()}
-                    disabled={isDailyLoading}
-                    style={{
-                      width: "100%",
-                      background: isDailyLoading ? "#1f2937" : "#1f2937",
-                      color: "#fff",
-                      padding: "12px 16px",
-                      borderRadius: 10,
-                      border: "1px solid #374151",
-                      fontWeight: "bold",
-                      cursor: isDailyLoading ? "not-allowed" : "pointer",
-                      fontSize: 14,
-                    }}
-                  >
-                    {isDailyLoading ? "Generating daily ideas..." : "Generate 3 daily cast ideas"}
-                  </button>
-
-                  {/* DAILY CAST RESULTS */}
-                  {showDailyMode && dailyCasts.length > 0 && (
-                    <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-                      {dailyCasts.map((cast, idx) => (
-                        <div key={cast.id} style={{
-                          background: "#020617", border: "1px solid #1f2937",
-                          borderRadius: 12, padding: 14,
-                        }}>
-                          <div style={{ fontSize: 11, color: "#818cf8", marginBottom: 6, letterSpacing: 0.6 }}>
-                            {DAILY_CAST_TYPES[idx]?.label.toUpperCase() ?? "CAST"}
-                          </div>
-                          <p style={{ color: "#e0e0ff", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
-                            {cast.text}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </section>
-              )}
-
-              {/* THREAD MODE — COMING SOON */}
-              <section style={{ ...cardStyle, opacity: 0.6 }}>
-                <div style={labelStyle}>THREAD MODE — COMING SOON</div>
-                <p style={{ color: "#a1a1aa", fontSize: 13, lineHeight: 1.6, margin: 0 }}>
-                  Turn one rough idea into a 3-cast thread. Perfect for when a single cast isn&apos;t enough.
-                </p>
-              </section>
-
-              {/* MY VOICE — COMING SOON */}
-              <section style={{ ...cardStyle, opacity: 0.6 }}>
-                <div style={labelStyle}>MY VOICE — COMING SOON</div>
-                <p style={{ color: "#a1a1aa", fontSize: 13, lineHeight: 1.6, margin: 0, marginBottom: 10 }}>
-                  Learn my style from my recent casts.
-                </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <div style={{ color: "#52525b", fontSize: 12 }}>1. Sign in with Farcaster</div>
-                  <div style={{ color: "#52525b", fontSize: 12 }}>2. AgentYap reads your public casts</div>
-                  <div style={{ color: "#52525b", fontSize: 12 }}>3. Suggests a voice profile</div>
-                  <div style={{ color: "#52525b", fontSize: 12 }}>4. You approve</div>
-                </div>
-                <p style={{ color: "#52525b", fontSize: 12, marginTop: 10, marginBottom: 0 }}>
-                  Why: this makes AgentYap feel personal, not generic.
-                </p>
-              </section>
-
-              {/* PREVIEW + EDIT + REGENERATE + CHANGE VIBE — shown before sign-in */}
+              {/* ===== PREVIEW + EDIT ===== */}
               {preview && (
                 <>
                   <section style={cardStyle}>
@@ -901,24 +737,192 @@ export default function AgentYap() {
                       When you&apos;re happy with it, sign in to post.
                     </div>
                   </section>
-
-                  {/* HIP EXPLANATION */}
-                  <section style={cardStyle}>
-                    <div style={labelStyle}>🟦 HYBRID IDENTITY PROTOCOL</div>
-                    <p style={{ color: "#d4d4d8", lineHeight: 1.7, margin: 0, marginBottom: 10 }}>
-                      <strong>HIP = Hybrid Identity Protocol.</strong> Your identity stays human.
-                      AI helps write. You approve. AgentYap adds transparent attribution.
-                    </p>
-                    <p style={{ color: "#a1a1aa", lineHeight: 1.7, margin: 0 }}>
-                      Every AI-assisted cast gets a 🟦 marker. No deception —
-                      the marker is machine-readable cast metadata. Human still owns
-                      the identity. Agent provides the voice. You approve every post.
-                    </p>
-                  </section>
                 </>
               )}
 
-              {/* SIGN IN — only after preview is generated */}
+              {/* ===== EXAMPLE OUTPUT ===== */}
+              <section style={cardStyle}>
+                <div style={labelStyle}>EXAMPLE OUTPUT</div>
+                <div style={{
+                  background: "#020617", border: "1px solid #1f2937",
+                  borderRadius: 12, padding: 14,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #22c55e, #0ea5e9)" }} />
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: "bold", color: "#e0e0ff" }}>@afifarioss</div>
+                      <div style={{ fontSize: 11, color: "#52525b" }}>2h ago</div>
+                    </div>
+                  </div>
+                  <p style={{ color: "#d4d4d8", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+                    Building AgentYap in public from Ipoh.<br />
+                    Small tool, simple mission: help Farcaster builders post consistently without losing their own voice.<br />
+                    AI assists. Human approves. Attribution stays clear.
+                  </p>
+                  <div style={{ marginTop: 10, display: "flex", gap: 6 }}>
+                    <span style={{ fontSize: 11, background: "#1e3a5f", color: "#60a5fa", padding: "3px 8px", borderRadius: 999 }}>
+                      🟦 AgentYap HIP-1.0
+                    </span>
+                  </div>
+                </div>
+                <p style={{ color: "#71717a", fontSize: 12, marginTop: 10, lineHeight: 1.5, marginBottom: 0 }}>
+                  Each AI-assisted cast gets a transparent marker, so people can see it was created with AgentYap.
+                  Attribution marker coming soon on Base.
+                </p>
+              </section>
+
+              {/* ===== HOW IT WORKS ===== */}
+              <section style={cardStyle}>
+                <div style={labelStyle}>HOW IT WORKS</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {HOW_IT_WORKS.map((item) => (
+                    <div key={item.num} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                      <div style={{
+                        width: 28, height: 28, borderRadius: "50%", background: "#1f2937",
+                        color: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 12, fontWeight: "bold", flexShrink: 0,
+                      }}>
+                        {item.num}
+                      </div>
+                      <div>
+                        <div style={{ color: "#e0e0ff", fontWeight: "bold", fontSize: 14 }}>{item.title}</div>
+                        <div style={{ color: "#a1a1aa", fontSize: 13, lineHeight: 1.5 }}>{item.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* ===== WHAT IS HIP? ===== */}
+              <section style={cardStyle}>
+                <div style={labelStyle}>🟦 WHAT IS HIP?</div>
+                <p style={{ color: "#d4d4d8", lineHeight: 1.7, margin: 0, marginBottom: 10 }}>
+                  <strong>HIP = Hybrid Identity Protocol.</strong> Your identity stays human.
+                  AI helps write. You approve. AgentYap adds transparent attribution.
+                </p>
+                <p style={{ color: "#a1a1aa", lineHeight: 1.7, margin: 0 }}>
+                  Every AI-assisted cast gets a 🟦 marker. No deception —
+                  the marker is machine-readable cast metadata. Human still owns
+                  the identity. Agent provides the voice. You approve every post.
+                </p>
+              </section>
+
+              {/* ===== TRUST / SIGNER NOTE ===== */}
+              <section style={cardStyle}>
+                <div style={labelStyle}>TRUST & SECURITY</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ color: "#a1a1aa", fontSize: 13, lineHeight: 1.5 }}>
+                    ✓ AgentYap never holds your private keys.
+                  </div>
+                  <div style={{ color: "#a1a1aa", fontSize: 13, lineHeight: 1.5 }}>
+                    ✓ Nothing posts without your approval.
+                  </div>
+                  <div style={{ color: "#a1a1aa", fontSize: 13, lineHeight: 1.5 }}>
+                    ✓ You can disconnect the signer anytime.
+                  </div>
+                </div>
+              </section>
+
+              {/* ===== FOUNDER NOTE ===== */}
+              <section style={cardStyle}>
+                <div style={labelStyle}>FOUNDER STORY</div>
+                <p style={{ color: "#d4d4d8", lineHeight: 1.7, margin: 0 }}>
+                  Built by <strong style={{ color: "#e0e0ff" }}>afifarioss</strong> — dad of 3 from Ipoh, building tools for Farcaster creators and Base builders.
+                  Family first. Always shipping.
+                </p>
+              </section>
+
+              {/* ===== WHO IS THIS FOR? ===== */}
+              <section style={cardStyle}>
+                <div style={labelStyle}>WHO IS THIS FOR?</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {WHO_IS_THIS_FOR.map((item) => (
+                    <div key={item} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ color: "#22c55e", fontSize: 14 }}>•</span>
+                      <span style={{ color: "#a1a1aa", fontSize: 14 }}>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* ===== DAILY CAST MODE ===== */}
+              {vibe && (
+                <section style={cardStyle}>
+                  <div style={labelStyle}>DAILY CAST MODE</div>
+                  <p style={{ color: "#a1a1aa", fontSize: 13, lineHeight: 1.6, marginTop: 0, marginBottom: 12 }}>
+                    Stuck on what to post? Generate 3 daily cast ideas from your bio.
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+                    {DAILY_CAST_TYPES.map((t) => (
+                      <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, color: "#a1a1aa", fontSize: 13 }}>
+                        <span>{t.label}</span>
+                        <span style={{ color: "#52525b" }}>— {t.desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => void handleDailyCasts()}
+                    disabled={isDailyLoading}
+                    style={{
+                      width: "100%",
+                      background: isDailyLoading ? "#1f2937" : "#1f2937",
+                      color: "#fff",
+                      padding: "12px 16px",
+                      borderRadius: 10,
+                      border: "1px solid #374151",
+                      fontWeight: "bold",
+                      cursor: isDailyLoading ? "not-allowed" : "pointer",
+                      fontSize: 14,
+                    }}
+                  >
+                    {isDailyLoading ? "Generating daily ideas..." : "Generate 3 daily cast ideas"}
+                  </button>
+
+                  {showDailyMode && dailyCasts.length > 0 && (
+                    <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+                      {dailyCasts.map((cast, idx) => (
+                        <div key={cast.id} style={{
+                          background: "#020617", border: "1px solid #1f2937",
+                          borderRadius: 12, padding: 14,
+                        }}>
+                          <div style={{ fontSize: 11, color: "#818cf8", marginBottom: 6, letterSpacing: 0.6 }}>
+                            {DAILY_CAST_TYPES[idx]?.label.toUpperCase() ?? "CAST"}
+                          </div>
+                          <p style={{ color: "#e0e0ff", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+                            {cast.text}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {/* ===== COMING SOON ===== */}
+              <section style={{ ...cardStyle, opacity: 0.6 }}>
+                <div style={labelStyle}>THREAD MODE — COMING SOON</div>
+                <p style={{ color: "#a1a1aa", fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+                  Turn one rough idea into a 3-cast thread. Perfect for when a single cast isn&apos;t enough.
+                </p>
+              </section>
+
+              <section style={{ ...cardStyle, opacity: 0.6 }}>
+                <div style={labelStyle}>MY VOICE — COMING SOON</div>
+                <p style={{ color: "#a1a1aa", fontSize: 13, lineHeight: 1.6, margin: 0, marginBottom: 10 }}>
+                  Learn my style from my recent casts.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ color: "#52525b", fontSize: 12 }}>1. Sign in with Farcaster</div>
+                  <div style={{ color: "#52525b", fontSize: 12 }}>2. AgentYap reads your public casts</div>
+                  <div style={{ color: "#52525b", fontSize: 12 }}>3. Suggests a voice profile</div>
+                  <div style={{ color: "#52525b", fontSize: 12 }}>4. You approve</div>
+                </div>
+                <p style={{ color: "#52525b", fontSize: 12, marginTop: 10, marginBottom: 0 }}>
+                  Why: this makes AgentYap feel personal, not generic.
+                </p>
+              </section>
+
+              {/* ===== FINAL CTA ===== */}
               {!isAuthenticated ? (
                 <div style={{ textAlign: "center", marginBottom: 30 }}>
                   {preview ? (
@@ -928,18 +932,6 @@ export default function AgentYap() {
                       </div>
                       <div style={{ fontSize: 12, color: "#71717a", lineHeight: 1.6 }}>
                         Sign in with Farcaster to post this 🟦 cast.
-                      </div>
-                      {/* SIGNER TRUST COPY */}
-                      <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
-                        <div style={{ fontSize: 12, color: "#52525b", lineHeight: 1.5 }}>
-                          ✓ AgentYap never holds your private keys.
-                        </div>
-                        <div style={{ fontSize: 12, color: "#52525b", lineHeight: 1.5 }}>
-                          ✓ Nothing posts without your approval.
-                        </div>
-                        <div style={{ fontSize: 12, color: "#52525b", lineHeight: 1.5 }}>
-                          ✓ You can disconnect the signer anytime.
-                        </div>
                       </div>
                     </>
                   ) : (
@@ -1348,6 +1340,7 @@ export default function AgentYap() {
             </div>
           )}
 
+          {/* ===== FOOTER WITH TAGLINE ===== */}
           <footer style={{
             marginTop: 32, padding: "20px 0", color: "#52525b",
             fontSize: 12, textAlign: "center", lineHeight: 1.6,
@@ -1355,6 +1348,10 @@ export default function AgentYap() {
             🟦 AgentYap HIP-1.0 • Built by afifarioss on Base
             <br />
             AI assists. You approve. Blockchain attributes.
+            <br />
+            <span style={{ color: "#71717a", fontSize: 13, marginTop: 8, display: "inline-block" }}>
+              AI can help write the cast. Only you can own the voice.
+            </span>
           </footer>
         </div>
       </div>
