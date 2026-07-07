@@ -113,6 +113,8 @@ export default function AgentYap() {
   const [isDailyLoading, setIsDailyLoading] = useState(false);
   const [showDailyMode, setShowDailyMode] = useState(false);
 
+  const [postedSuccess, setPostedSuccess] = useState<{ text: string; hash?: string } | null>(null);
+
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -508,6 +510,7 @@ export default function AgentYap() {
         ...current,
       ]);
 
+      setPostedSuccess({ text, hash: postData.hash });
       setPreview("");
       setToast("🟦 Cast posted to Farcaster");
       track("cast_posted", { vibe, hash: postData.hash, mode: signerMode });
@@ -576,10 +579,10 @@ export default function AgentYap() {
 
             <div style={{ fontSize: 34, fontWeight: "bold", lineHeight: 1.1 }}>AgentYap</div>
             <div style={{ fontSize: 18, color: "#c4b5fd", marginTop: 8, lineHeight: 1.4 }}>
-              Turn rough ideas into Farcaster casts — with AI assistance clearly marked.
+              AI assists. Human approves. Attribution stays clear.
             </div>
-            <p style={{ color: "#a1a1aa", lineHeight: 1.7, marginTop: 14 }}>
-              AgentYap helps you post better Farcaster casts, but you stay in control.
+            <p style={{ color: "#71717a", lineHeight: 1.7, marginTop: 10, fontSize: 13 }}>
+              No sign-in needed to preview.
             </p>
           </header>
 
@@ -729,6 +732,35 @@ export default function AgentYap() {
                         Change vibe
                       </button>
                     </div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(preview);
+                          setToast("Copied to clipboard");
+                        }}
+                        style={{
+                          flex: 1,
+                          background: "#020617",
+                          color: "#a1a1aa",
+                          padding: "12px 16px",
+                          borderRadius: 10,
+                          border: "1px solid #1f2937",
+                          fontWeight: "bold",
+                          cursor: "pointer",
+                          fontSize: 14,
+                        }}
+                      >
+                        Copy
+                      </button>
+                      {!isAuthenticated && (
+                        <div
+                          onClick={() => track("signin_clicked", { vibe: vibe ?? undefined })}
+                          style={{ flex: 1 }}
+                        >
+                          <SignInButton />
+                        </div>
+                      )}
+                    </div>
                     <div style={{ fontSize: 12, color: "#71717a", marginTop: 10, lineHeight: 1.5 }}>
                       Edit the draft above. Regenerate if you want a fresh take. Change vibe to switch the tone.
                       When you&apos;re happy with it, sign in to post.
@@ -794,13 +826,14 @@ export default function AgentYap() {
               <section style={cardStyle}>
                 <div style={labelStyle}>🟦 WHAT IS HIP?</div>
                 <p style={{ color: "#d4d4d8", lineHeight: 1.7, margin: 0, marginBottom: 10 }}>
-                  <strong>HIP = Hybrid Identity Protocol.</strong> Your identity stays human.
-                  AI helps write. You approve. AgentYap adds transparent attribution.
+                  <strong>HIP means Hybrid Identity Protocol.</strong>
+                </p>
+                <p style={{ color: "#a1a1aa", lineHeight: 1.7, margin: 0, marginBottom: 10 }}>
+                  Your identity stays human. AI helps with the words. You approve every cast. AgentYap adds a transparent marker so people know AI assisted the draft.
                 </p>
                 <p style={{ color: "#a1a1aa", lineHeight: 1.7, margin: 0 }}>
-                  Every AI-assisted cast gets a 🟦 marker. No deception —
-                  the marker is machine-readable cast metadata. Human still owns
-                  the identity. Agent provides the voice. You approve every post.
+                  Today: AgentYap HIP-1.0 marker.<br />
+                  Coming soon: attribution recorded on Base.
                 </p>
               </section>
 
@@ -813,6 +846,9 @@ export default function AgentYap() {
                   </div>
                   <div style={{ color: "#a1a1aa", fontSize: 13, lineHeight: 1.5 }}>
                     ✓ Nothing posts without your approval.
+                  </div>
+                  <div style={{ color: "#a1a1aa", fontSize: 13, lineHeight: 1.5 }}>
+                    ✓ You can edit every cast before posting.
                   </div>
                   <div style={{ color: "#a1a1aa", fontSize: 13, lineHeight: 1.5 }}>
                     ✓ You can disconnect the signer anytime.
@@ -830,7 +866,7 @@ export default function AgentYap() {
                   I build AgentYap because I know the struggle. You ship all day. Fix bugs. Handle life. Then 10pm hits and you remember — shit, I haven't posted on Farcaster in three days.
                 </p>
                 <p style={{ color: "#a1a1aa", lineHeight: 1.7, margin: 0, marginBottom: 12 }}>
-                  I don't want bots pretending to be me. I want AI that helps me write faster, then shuts up. I read every cast before it goes out. The 🟦 marker? That's just honesty. No secrets.
+                  I don't want bots pretending to be me. I want AI that helps me write faster, then shuts up and gets out of the way. I read every cast before it goes out. The 🟦 marker? That's just honesty. No secrets.
                 </p>
                 <p style={{ color: "#a1a1aa", lineHeight: 1.7, margin: 0, marginBottom: 12 }}>
                   My kids don't care about my follower count. They care that I'm there. So I build tools that save me time, not steal it.
@@ -1163,6 +1199,71 @@ export default function AgentYap() {
 
           {step === "dashboard" && (
             <div>
+              {postedSuccess && (
+                <section style={{ ...cardStyle, border: "1px solid #22c55e" }}>
+                  <div style={{ fontSize: 22, fontWeight: "bold", color: "#22c55e", marginBottom: 12 }}>
+                    ✅ Your cast is live
+                  </div>
+                  <div style={{
+                    background: "#020617", border: "1px solid #1f2937",
+                    borderRadius: 12, padding: 14, marginBottom: 16,
+                  }}>
+                    <div style={{ fontSize: 11, color: "#22c55e", marginBottom: 8, letterSpacing: 0.6 }}>
+                      POSTED CAST
+                    </div>
+                    <div style={{ color: "#e0e0ff", fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+                      {postedSuccess.text}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {postedSuccess.hash && (
+                      <a
+                        href={`https://warpcast.com/~/conversations/${postedSuccess.hash}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          background: "#1f2937", color: "#fff", padding: "12px 16px",
+                          borderRadius: 10, border: "1px solid #374151", textDecoration: "none",
+                          fontWeight: "bold", fontSize: 14, display: "inline-block",
+                        }}
+                      >
+                        View on Farcaster →
+                      </a>
+                    )}
+                    <button
+                      onClick={() => {
+                        const link = postedSuccess.hash
+                          ? `https://warpcast.com/~/conversations/${postedSuccess.hash}`
+                          : postedSuccess.text;
+                        navigator.clipboard.writeText(link);
+                        setToast("Copied link");
+                      }}
+                      style={{
+                        background: "#020617", color: "#a1a1aa", padding: "12px 16px",
+                        borderRadius: 10, border: "1px solid #1f2937", fontWeight: "bold",
+                        cursor: "pointer", fontSize: 14,
+                      }}
+                    >
+                      Copy link
+                    </button>
+                    <button
+                      onClick={() => {
+                        setPostedSuccess(null);
+                        setPreview("");
+                        track("generate_another_clicked");
+                      }}
+                      style={{
+                        background: "#22c55e", color: "#000", padding: "12px 16px",
+                        borderRadius: 10, border: "none", fontWeight: "bold",
+                        cursor: "pointer", fontSize: 14,
+                      }}
+                    >
+                      Generate another cast
+                    </button>
+                  </div>
+                </section>
+              )}
+
               <section style={cardStyle}>
                 <div style={{ fontSize: 22, fontWeight: "bold", marginBottom: 6 }}>
                   Your AgentYap workspace
@@ -1372,7 +1473,7 @@ export default function AgentYap() {
             AI assists. You approve. Blockchain attributes.
             <br />
             <span style={{ color: "#71717a", fontSize: 13, marginTop: 8, display: "inline-block" }}>
-              AI can help write the cast. Only you can own the voice.
+              AI assists. Human approves. Attribution stays clear.
             </span>
           </footer>
         </div>
