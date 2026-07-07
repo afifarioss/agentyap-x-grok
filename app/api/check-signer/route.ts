@@ -28,7 +28,12 @@ export async function GET(req: NextRequest) {
     }
 
     const approved = data.status === "approved";
-    return NextResponse.json({ approved, status: data.status });
+    return NextResponse.json({
+      approved,
+      status: data.status,
+      approval_url: data.approval_url || null,
+      public_key: data.public_key || null,
+    });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Internal error";
     console.error("check-signer fatal error:", e);
