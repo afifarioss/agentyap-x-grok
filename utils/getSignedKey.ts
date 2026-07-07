@@ -1,4 +1,3 @@
-// utils/getSignedKey.ts
 import { ViemLocalEip712Signer } from "@farcaster/hub-nodejs";
 import { bytesToHex, hexToBytes } from "viem";
 import { mnemonicToAccount } from "viem/accounts";
@@ -11,6 +10,7 @@ if (!NEYNAR_API_KEY) {
   throw new Error("NEYNAR_API_KEY is not defined");
 }
 
+// Direct fetch with explicit API key header
 const neynarFetch = async (path: string, body?: object) => {
   const res = await fetch(`${NEYNAR_API_URL}${path}`, {
     method: body ? "POST" : "GET",
@@ -38,11 +38,13 @@ export const getSignedKey = async () => {
   // Step 1: Create signer
   const createSigner = await neynarFetch("/farcaster/signer", {});
 
-  console.log("[getSignedKey] Created signer:", createSigner);
+  console.log("[getSignedKey] Created signer:", {
+    status: createSigner.status,
+    signer_uuid: createSigner.signer_uuid,
+  });
 
-  // Check if signer needs approval (has approval_url)
+  // Handle pending approval — return to frontend for QR code / Warpcast link
   if (createSigner.status === "pending_approval" && createSigner.approval_url) {
-    // Return the approval URL so the frontend can show QR code / Warpcast link
     return {
       status: "pending_approval",
       signer_uuid: createSigner.signer_uuid,
@@ -51,30 +53,40 @@ export const getSignedKey = async () => {
     };
   }
 
-  // If already approved somehow, proceed with registration
+  // If already approved, register immediately
   if (createSigner.status === "approved") {
     return await registerSignedKey(createSigner.signer_uuid, createSigner.public_key);
+  }
+
+  // Fallback: try to register anyway (some Neynar versions return different shapes)
+  if (createSigner.signer_uuid && createSigner.public_key) {
+    return {
+      status: "pending_approval",
+      signer_uuid: createSigner.signer_uuid,
+      public_key: createSigner.public_key,
+      approval_url: createSigner.approval_url || null,
+    };
   }
 
   throw new Error(`Unknown signer response: ${JSON.stringify(createSigner)}`);
 };
 
-// Separate function to register after approval
+// Call this AFTER user approves in Warpcast (frontend polls check-signer first)
 export const registerSignedKeyAfterApproval = async (signerUuid: string, publicKey: string) => {
   return await registerSignedKey(signerUuid, publicKey);
 };
 
 const registerSignedKey = async (signerUuid: string, publicKey: string) => {
-  // Step 2: Generate signature with mnemonic
+  // Step 2: Generate signature with developer mnemonic
   const { deadline, signature } = await generateSignature(publicKey);
 
   if (deadline === 0 || signature === "") {
-    throw new Error("Failed to generate signature");
+    throw new Error("Failed to generate signature — check FARCASTER_DEVELOPER_MNEMONIC");
   }
 
   const fid = await getFid();
 
-  // Step 3: Register signed key using the correct endpoint
+  // Step 3: Register signed key using CORRECT endpoint
   const signedKey = await neynarFetch("/farcaster/signer/signed_key", {
     signer_uuid: signerUuid,
     app_fid: fid,
@@ -82,7 +94,11 @@ const registerSignedKey = async (signerUuid: string, publicKey: string) => {
     signature,
   });
 
-  return signedKey;
+  return {
+    status: "registered",
+    signer_uuid: signedKey.signer_uuid || signerUuid,
+    fid: signedKey.fid || fid,
+  };
 };
 
 const generateSignature = async (publicKey: string) => {
@@ -96,7 +112,7 @@ const generateSignature = async (publicKey: string) => {
   const account = mnemonicToAccount(mnemonic);
   const appAccountKey = new ViemLocalEip712Signer(account);
 
-  const deadline = Math.floor(Date.now() / 1000) + 86400;
+  const deadline = Math.floor(Date.now() / 1000) + 86400; // 24h
   const publicKeyBytes = hexToBytes(publicKey as `0x${string}`);
 
   const signature = await appAccountKey.signKeyRequest({
@@ -106,6 +122,7 @@ const generateSignature = async (publicKey: string) => {
   });
 
   if (signature.isErr()) {
+    console.error("[generateSignature] Failed:", signature.error);
     return { deadline, signature: "" };
   }
 
