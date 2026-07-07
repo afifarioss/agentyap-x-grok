@@ -43,30 +43,36 @@ export const getSignedKey = async () => {
     signer_uuid: createSigner.signer_uuid,
   });
 
-  // Handle pending approval — return to frontend for QR code / Warpcast link
-  if (createSigner.status === "pending_approval" && createSigner.approval_url) {
+  // REAL FIX: For a fresh signer (status === "generated" or "pending_approval"),
+  // call registerSignedKey immediately. The POST /signer/signed_key call is what
+  // generates the approval_url — it doesn't appear by itself.
+  if (
+    createSigner.status === "generated" ||
+    createSigner.status === "pending_approval"
+  ) {
+    const registered = await registerSignedKey(
+      createSigner.signer_uuid,
+      createSigner.public_key
+    );
+
+    // registered now contains the REAL approval_url from Neynar
     return {
-      mode: "neynar", // <-- ADDED: tells frontend this is a neynar-managed signer
+      mode: "neynar",
       status: "pending_approval",
-      signer_uuid: createSigner.signer_uuid,
+      signer_uuid: registered.signer_uuid,
       public_key: createSigner.public_key,
-      approval_url: createSigner.approval_url,
+      approval_url: registered.approval_url,
     };
   }
 
-  // If already approved, register immediately
+  // If already approved, just return registered state
   if (createSigner.status === "approved") {
-    return await registerSignedKey(createSigner.signer_uuid, createSigner.public_key);
-  }
-
-  // Fallback: try to register anyway (some Neynar versions return different shapes)
-  if (createSigner.signer_uuid && createSigner.public_key) {
     return {
-      mode: "neynar", // <-- ADDED: tells frontend this is a neynar-managed signer
-      status: "pending_approval",
+      mode: "neynar",
+      status: "registered",
       signer_uuid: createSigner.signer_uuid,
       public_key: createSigner.public_key,
-      approval_url: createSigner.approval_url || null,
+      approval_url: null,
     };
   }
 
@@ -88,7 +94,7 @@ const registerSignedKey = async (signerUuid: string, publicKey: string) => {
 
   const fid = await getFid();
 
-  // Step 3: Register signed key using CORRECT endpoint
+  // Step 3: Register signed key — THIS is what generates the approval_url
   const signedKey = await neynarFetch("/farcaster/signer/signed_key", {
     signer_uuid: signerUuid,
     app_fid: fid,
@@ -96,10 +102,14 @@ const registerSignedKey = async (signerUuid: string, publicKey: string) => {
     signature,
   });
 
+  // REAL FIX: Return pending_approval with the actual approval_url from Neynar,
+  // not a fake "registered" status. The signer is NOT registered yet — the user
+  // still needs to tap the approval_url in Warpcast.
   return {
-    mode: "neynar", // <-- ADDED: tells frontend this is a neynar-managed signer
-    status: "registered",
+    mode: "neynar",
+    status: "pending_approval",
     signer_uuid: signedKey.signer_uuid || signerUuid,
+    approval_url: signedKey.signer_approval_url || signedKey.approval_url || null,
     fid: signedKey.fid || fid,
   };
 };
@@ -133,4 +143,3 @@ const generateSignature = async (publicKey: string) => {
 
   return { deadline, signature: sigHex };
 };
-
