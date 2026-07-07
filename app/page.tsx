@@ -4,10 +4,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { SignInButton, useProfile } from "@farcaster/auth-kit";
 
 const VIBES = [
-  { id: "builder", label: "🔨 Builder", desc: "Shipping updates, product lessons, and Base experiments" },
-  { id: "degen", label: "💎 Degen", desc: "Crypto thoughts, Base energy, and token culture" },
-  { id: "creator", label: "🎨 Creator", desc: "Audience growth, content ideas, and community posts" },
-  { id: "family", label: "👨‍👩‍👧 Family Man", desc: "Real life, parenting, and building for family" },
+  { id: "builder", label: "🔨 Builder Mode", desc: "Shipping, lessons, Base experiments" },
+  { id: "degen", label: "💎 Degen Mode", desc: "Crypto thoughts and token culture" },
+  { id: "creator", label: "🎨 Creator Mode", desc: "Content, audience, community" },
+  { id: "family", label: "👨‍👩‍👧 Family Man Mode", desc: "Parenting, real life, building for family" },
 ];
 
 const SIGNER_WAIT_MESSAGES = [
@@ -831,6 +831,23 @@ export default function AgentYap() {
                 <div style={labelStyle}>THREAD MODE — COMING SOON</div>
                 <p style={{ color: "#a1a1aa", fontSize: 13, lineHeight: 1.6, margin: 0 }}>
                   Turn one rough idea into a 3-cast thread. Perfect for when a single cast isn&apos;t enough.
+                </p>
+              </section>
+
+              {/* MY VOICE — COMING SOON */}
+              <section style={{ ...cardStyle, opacity: 0.6 }}>
+                <div style={labelStyle}>MY VOICE — COMING SOON</div>
+                <p style={{ color: "#a1a1aa", fontSize: 13, lineHeight: 1.6, margin: 0, marginBottom: 10 }}>
+                  Learn my style from my recent casts.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ color: "#52525b", fontSize: 12 }}>1. Sign in with Farcaster</div>
+                  <div style={{ color: "#52525b", fontSize: 12 }}>2. AgentYap reads your public casts</div>
+                  <div style={{ color: "#52525b", fontSize: 12 }}>3. Suggests a voice profile</div>
+                  <div style={{ color: "#52525b", fontSize: 12 }}>4. You approve</div>
+                </div>
+                <p style={{ color: "#52525b", fontSize: 12, marginTop: 10, marginBottom: 0 }}>
+                  Why: this makes AgentYap feel personal, not generic.
                 </p>
               </section>
 
