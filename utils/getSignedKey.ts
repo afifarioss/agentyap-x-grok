@@ -11,7 +11,6 @@ if (!NEYNAR_API_KEY) {
   throw new Error("NEYNAR_API_KEY is not defined");
 }
 
-// Direct fetch with explicit API key header
 const neynarFetch = async (path: string, body?: object) => {
   const res = await fetch(`${NEYNAR_API_URL}${path}`, {
     method: body ? "POST" : "GET",
@@ -39,10 +38,35 @@ export const getSignedKey = async () => {
   // Step 1: Create signer
   const createSigner = await neynarFetch("/farcaster/signer", {});
 
+  console.log("[getSignedKey] Created signer:", createSigner);
+
+  // Check if signer needs approval (has approval_url)
+  if (createSigner.status === "pending_approval" && createSigner.approval_url) {
+    // Return the approval URL so the frontend can show QR code / Warpcast link
+    return {
+      status: "pending_approval",
+      signer_uuid: createSigner.signer_uuid,
+      public_key: createSigner.public_key,
+      approval_url: createSigner.approval_url,
+    };
+  }
+
+  // If already approved somehow, proceed with registration
+  if (createSigner.status === "approved") {
+    return await registerSignedKey(createSigner.signer_uuid, createSigner.public_key);
+  }
+
+  throw new Error(`Unknown signer response: ${JSON.stringify(createSigner)}`);
+};
+
+// Separate function to register after approval
+export const registerSignedKeyAfterApproval = async (signerUuid: string, publicKey: string) => {
+  return await registerSignedKey(signerUuid, publicKey);
+};
+
+const registerSignedKey = async (signerUuid: string, publicKey: string) => {
   // Step 2: Generate signature with mnemonic
-  const { deadline, signature } = await generateSignature(
-    createSigner.public_key
-  );
+  const { deadline, signature } = await generateSignature(publicKey);
 
   if (deadline === 0 || signature === "") {
     throw new Error("Failed to generate signature");
@@ -50,9 +74,9 @@ export const getSignedKey = async () => {
 
   const fid = await getFid();
 
-  // Step 3: Register signed key
-  const signedKey = await neynarFetch("/farcaster/signer", {
-    signer_uuid: createSigner.signer_uuid,
+  // Step 3: Register signed key using the correct endpoint
+  const signedKey = await neynarFetch("/farcaster/signer/signed_key", {
+    signer_uuid: signerUuid,
     app_fid: fid,
     deadline,
     signature,
@@ -72,7 +96,7 @@ const generateSignature = async (publicKey: string) => {
   const account = mnemonicToAccount(mnemonic);
   const appAccountKey = new ViemLocalEip712Signer(account);
 
-  const deadline = Math.floor(Date.now() / 1000) + 86400; // 24h
+  const deadline = Math.floor(Date.now() / 1000) + 86400;
   const publicKeyBytes = hexToBytes(publicKey as `0x${string}`);
 
   const signature = await appAccountKey.signKeyRequest({
