@@ -40,6 +40,12 @@ const WHO_IS_THIS_FOR = [
   "People who want AI help without hiding it",
 ];
 
+const DAILY_CAST_TYPES = [
+  { id: "update", label: "🔨 Builder update", desc: "What you shipped today" },
+  { id: "lesson", label: "📚 Lesson learned", desc: "Something you figured out" },
+  { id: "question", label: "❓ Question for community", desc: "Ask your Farcaster circle" },
+];
+
 const MAX_POLL_ATTEMPTS = 15;
 const POLL_INTERVAL_MS = 2000;
 const BACKOFF_AFTER_ATTEMPTS = 8;
@@ -101,6 +107,11 @@ export default function AgentYap() {
   const [isSampleLoading, setIsSampleLoading] = useState(false);
   const sampleCacheRef = useRef<Record<string, string>>({});
   const latestVibeRef = useRef<string | null>(null);
+
+  // Daily cast mode state
+  const [dailyCasts, setDailyCasts] = useState<{ id: string; text: string; type: string }[]>([]);
+  const [isDailyLoading, setIsDailyLoading] = useState(false);
+  const [showDailyMode, setShowDailyMode] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -381,10 +392,49 @@ export default function AgentYap() {
     }
   }
 
+  async function handleDailyCasts(): Promise<void> {
+    if (!vibe) { setError("Pick a vibe first."); return; }
+    setError(null);
+    setIsDailyLoading(true);
+    setDailyCasts([]);
+    setShowDailyMode(true);
+
+    try {
+      const types = ["update", "lesson", "question"];
+      const results: { id: string; text: string; type: string }[] = [];
+
+      for (const type of types) {
+        const res = await fetch("/api/generate-post", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            vibe,
+            handle: username ?? handle,
+            bio,
+            dailyType: type,
+          }),
+        });
+        const data = (await res.json()) as { text?: string; error?: string };
+        if (res.ok && data.text) {
+          results.push({ id: makePostId(), text: data.text, type });
+        }
+      }
+
+      setDailyCasts(results);
+      track("daily_casts_generated", { count: results.length, vibe });
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Could not generate daily casts.");
+    } finally {
+      setIsDailyLoading(false);
+    }
+  }
+
   function handleChangeVibe(): void {
     setVibe(null);
     setPreview("");
     setSamplePost("");
+    setDailyCasts([]);
+    setShowDailyMode(false);
     track("change_vibe_clicked");
   }
 
@@ -722,6 +772,68 @@ export default function AgentYap() {
                 </button>
               </section>
 
+              {/* DAILY CAST MODE */}
+              {vibe && (
+                <section style={cardStyle}>
+                  <div style={labelStyle}>DAILY CAST MODE</div>
+                  <p style={{ color: "#a1a1aa", fontSize: 13, lineHeight: 1.6, marginTop: 0, marginBottom: 12 }}>
+                    Stuck on what to post? Generate 3 daily cast ideas from your bio.
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+                    {DAILY_CAST_TYPES.map((t) => (
+                      <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, color: "#a1a1aa", fontSize: 13 }}>
+                        <span>{t.label}</span>
+                        <span style={{ color: "#52525b" }}>— {t.desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => void handleDailyCasts()}
+                    disabled={isDailyLoading}
+                    style={{
+                      width: "100%",
+                      background: isDailyLoading ? "#1f2937" : "#1f2937",
+                      color: "#fff",
+                      padding: "12px 16px",
+                      borderRadius: 10,
+                      border: "1px solid #374151",
+                      fontWeight: "bold",
+                      cursor: isDailyLoading ? "not-allowed" : "pointer",
+                      fontSize: 14,
+                    }}
+                  >
+                    {isDailyLoading ? "Generating daily ideas..." : "Generate 3 daily cast ideas"}
+                  </button>
+
+                  {/* DAILY CAST RESULTS */}
+                  {showDailyMode && dailyCasts.length > 0 && (
+                    <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+                      {dailyCasts.map((cast, idx) => (
+                        <div key={cast.id} style={{
+                          background: "#020617", border: "1px solid #1f2937",
+                          borderRadius: 12, padding: 14,
+                        }}>
+                          <div style={{ fontSize: 11, color: "#818cf8", marginBottom: 6, letterSpacing: 0.6 }}>
+                            {DAILY_CAST_TYPES[idx]?.label.toUpperCase() ?? "CAST"}
+                          </div>
+                          <p style={{ color: "#e0e0ff", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+                            {cast.text}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {/* THREAD MODE — COMING SOON */}
+              <section style={{ ...cardStyle, opacity: 0.6 }}>
+                <div style={labelStyle}>THREAD MODE — COMING SOON</div>
+                <p style={{ color: "#a1a1aa", fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+                  Turn one rough idea into a 3-cast thread. Perfect for when a single cast isn&apos;t enough.
+                </p>
+              </section>
+
               {/* PREVIEW + EDIT + REGENERATE + CHANGE VIBE — shown before sign-in */}
               {preview && (
                 <>
@@ -732,7 +844,6 @@ export default function AgentYap() {
                       onChange={(e) => setPreview(e.target.value)}
                       style={{ ...inputStyle, minHeight: 120, resize: "vertical" }}
                     />
-                    {/* EDIT CONTROLS: Regenerate + Change vibe */}
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
                       <button
                         onClick={() => void handlePreview()}
