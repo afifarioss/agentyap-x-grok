@@ -11,6 +11,15 @@ const VIBE_PROMPTS: Record<string, string> = {
     "Write a short, punchy Farcaster cast under 280 characters about building on Base while balancing family life. Honest, grounded, real dad energy.",
 };
 
+const DAILY_TYPE_PROMPTS: Record<string, string> = {
+  update:
+    "Write a short Farcaster cast under 280 characters as a builder update — what you shipped, built, or deployed today. Direct, no fluff.",
+  lesson:
+    "Write a short Farcaster cast under 280 characters sharing one lesson you learned today. Humble, reflective, helpful to others.",
+  question:
+    "Write a short Farcaster cast under 280 characters asking your Farcaster community a genuine question. Engaging, open-ended, no fluff.",
+};
+
 interface OpenRouterResponse {
   choices?: Array<{ message?: { content?: string } }>;
   error?: { message?: string };
@@ -26,17 +35,19 @@ function clean(text: string): string {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  let vibe: string, handle: string | undefined, bio: string | undefined;
+  let vibe: string, handle: string | undefined, bio: string | undefined, dailyType: string | undefined;
 
   try {
     const body = (await req.json()) as {
       vibe?: string;
       handle?: string;
       bio?: string;
+      dailyType?: string;
     };
     vibe = body.vibe ?? "";
     handle = body.handle;
     bio = body.bio;
+    dailyType = body.dailyType;
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
@@ -55,6 +66,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       { status: 500 }
     );
   }
+
+  // Use dailyType prompt if provided, otherwise fall back to vibe prompt
+  const systemPrompt = dailyType && DAILY_TYPE_PROMPTS[dailyType]
+    ? DAILY_TYPE_PROMPTS[dailyType]
+    : VIBE_PROMPTS[vibe];
 
   const userPrompt = [
     "Write ONE Farcaster cast.",
@@ -78,12 +94,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        // FIX: llama-4-maverick:free was delisted. Swapped to the current
-        // live free slug (verified July 2026). Re-check openrouter.ai/models
-        // periodically since free slugs rotate without notice.
         model: "openai/gpt-oss-120b:free",
         messages: [
-          { role: "system", content: VIBE_PROMPTS[vibe] },
+          { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
         temperature: 0.85,
