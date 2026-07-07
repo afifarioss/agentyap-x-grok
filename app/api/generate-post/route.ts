@@ -78,7 +78,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "meta-llama/llama-4-maverick:free",
+        // FIX: llama-4-maverick:free was delisted. Swapped to the current
+        // live free slug (verified July 2026). Re-check openrouter.ai/models
+        // periodically since free slugs rotate without notice.
+        model: "openai/gpt-oss-120b:free",
         messages: [
           { role: "system", content: VIBE_PROMPTS[vibe] },
           { role: "user", content: userPrompt },
