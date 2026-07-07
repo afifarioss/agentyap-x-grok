@@ -755,14 +755,6 @@ export default function AgentYap() {
                       >
                         Copy
                       </button>
-                      {!isAuthenticated && (
-                        <div
-                          onClick={() => track("signin_clicked", { vibe: vibe ?? undefined })}
-                          style={{ flex: 1 }}
-                        >
-                          <SignInButton />
-                        </div>
-                      )}
                     </div>
                     <div style={{ fontSize: 12, color: "#71717a", marginTop: 10, lineHeight: 1.5 }}>
                       Edit the draft above. Regenerate if you want a fresh take. Change vibe to switch the tone.
