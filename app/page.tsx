@@ -5,6 +5,8 @@
 // 3. setPollSeconds(0) uses queueMicrotask
 // 4. All useEffect dependencies added
 // 5. Unused catch vars removed
+// 6. FIX: handle "generated" signer status (no approval_url yet) by retrying
+//    create-signer automatically instead of throwing "Unknown signer response"
 
 'use client';
 
@@ -38,6 +40,8 @@ const MAX_POLL_ATTEMPTS = 60;
 const POLL_INTERVAL_MS = 5000;
 const BACKOFF_AFTER_ATTEMPTS = 6;
 const BACKOFF_INTERVAL_MS = 10000;
+const MAX_GENERATING_RETRIES = 5;
+const GENERATING_RETRY_DELAY_MS = 2000;
 
 type Step = "setup" | "signer" | "hub-register" | "dashboard";
 type SignerStatus = "idle" | "pending" | "approved" | "timeout";
@@ -104,6 +108,7 @@ export default function AgentYap() {
   const pollAttemptsRef = useRef(0);
   const autoConnectFiredRef = useRef(false);
   const landingTrackedRef = useRef(false);
+  const generatingRetriesRef = useRef(0);
 
   const selectedVibe = VIBES.find((v) => v.id === vibe);
 
@@ -152,6 +157,7 @@ export default function AgentYap() {
 
         const data = (await res.json()) as {
           mode?: string;
+          status?: string;
           demo?: boolean;
           message?: string;
           signer_uuid?: string;
@@ -185,8 +191,9 @@ export default function AgentYap() {
           return;
         }
 
-        // STRICT CHECK: backend now returns mode: "neynar"
+        // Backend returns mode:"neynar" with a real approval_url once it's ready
         if (data.mode === "neynar" && data.signer_uuid && data.approval_url) {
+          generatingRetriesRef.current = 0;
           setSignerMode("neynar");
           setSignerUuid(data.signer_uuid);
           setSignerApprovalUrl(data.approval_url);
@@ -194,6 +201,24 @@ export default function AgentYap() {
           setStep("signer");
           track("signer_created", { signerUuid: data.signer_uuid });
           return;
+        }
+
+        // NEW: Neynar's signer sometimes comes back "generated" — created but the
+        // approval_url isn't attached yet. Don't error, just retry create-signer
+        // a few times with a short delay instead of throwing.
+        if (data.mode === "neynar" && data.status === "generated" && data.signer_uuid) {
+          if (generatingRetriesRef.current < MAX_GENERATING_RETRIES) {
+            generatingRetriesRef.current += 1;
+            track("signer_generating_retry", {
+              signerUuid: data.signer_uuid,
+              attempt: generatingRetriesRef.current,
+            });
+            setTimeout(() => { void connectFarcaster(); }, GENERATING_RETRY_DELAY_MS);
+            return;
+          }
+          throw new Error(
+            "Signer is taking longer than usual to generate. Please tap Continue setup to try again."
+          );
         }
 
         throw new Error(data.message ?? "Unknown signer response");
@@ -281,6 +306,7 @@ export default function AgentYap() {
     setHubSigner(null);
     setSignerMode(null);
     setPollSeconds(0);
+    generatingRetriesRef.current = 0;
     autoConnectFiredRef.current = false;
     setStep("setup");
     setTimeout(() => { void connectFarcaster(); }, 0);
