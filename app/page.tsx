@@ -226,6 +226,7 @@ export default function AgentYap() {
     }
   }, [isAuthenticated, fid, username, step, connectFarcaster]);
 
+  // Neynar signer polling
   useEffect(() => {
     if (step !== "signer" || signerStatus !== "pending" || !signerUuid) return;
 
@@ -235,24 +236,27 @@ export default function AgentYap() {
     queueMicrotask(() => setPollSeconds(0));
     const elapsedMs = { current: 0 };
 
-    const poll = async (): Promise<void> => {
+    const poll = async (isFocusCheck = false): Promise<void> => {
       if (cancelled) return;
-      pollAttemptsRef.current += 1;
-      const interval = pollAttemptsRef.current <= BACKOFF_AFTER_ATTEMPTS
-        ? POLL_INTERVAL_MS : BACKOFF_INTERVAL_MS;
-      elapsedMs.current += interval;
-      setPollSeconds(Math.round(elapsedMs.current / 1000));
 
-      if (pollAttemptsRef.current >= MAX_POLL_ATTEMPTS) {
-        setSignerStatus("timeout");
-        track("signer_timeout", { signerUuid });
-        return;
+      if (!isFocusCheck) {
+        pollAttemptsRef.current += 1;
+        const interval = pollAttemptsRef.current <= BACKOFF_AFTER_ATTEMPTS
+          ? POLL_INTERVAL_MS : BACKOFF_INTERVAL_MS;
+        elapsedMs.current += interval;
+        setPollSeconds(Math.round(elapsedMs.current / 1000));
+
+        if (pollAttemptsRef.current >= MAX_POLL_ATTEMPTS) {
+          setSignerStatus("timeout");
+          track("signer_timeout", { signerUuid });
+          return;
+        }
       }
 
       try {
         const res = await fetch(`/api/check-signer?signerUuid=${signerUuid}`);
         const data = (await res.json()) as { approved?: boolean; status?: string };
-        track("signer_poll", { approved: data.approved, attempt: pollAttemptsRef.current });
+        track("signer_poll", { approved: data.approved, attempt: pollAttemptsRef.current, focusCheck: isFocusCheck });
 
         if (data.approved === true) {
           setSignerStatus("approved");
@@ -264,7 +268,7 @@ export default function AgentYap() {
         // silently fail poll errors
       }
 
-      if (cancelled) return;
+      if (cancelled || isFocusCheck) return;
       timeoutId = setTimeout(
         poll,
         pollAttemptsRef.current < BACKOFF_AFTER_ATTEMPTS ? POLL_INTERVAL_MS : BACKOFF_INTERVAL_MS
@@ -273,13 +277,9 @@ export default function AgentYap() {
 
     timeoutId = setTimeout(poll, 1500);
 
-    // UX fix: when the user comes back from approving in Warpcast (tab focus
-    // regained), immediately re-check instead of making them wait for the
-    // next scheduled interval. This removes the "why isn't it moving" confusion.
     const handleFocus = () => {
       if (cancelled) return;
-      if (timeoutId) clearTimeout(timeoutId);
-      void poll();
+      void poll(true);
     };
     window.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleFocus);
@@ -687,6 +687,22 @@ export default function AgentYap() {
                     <div style={{ fontSize: 12, color: "#71717a", marginTop: 6 }}>
                       Checking... {pollSeconds}s
                     </div>
+                  </div>
+
+                  <div style={{
+                    background: "#0b1120", border: "1px solid #312e81",
+                    borderRadius: 12, padding: 16, marginTop: 14, textAlign: "left",
+                  }}>
+                    <div style={{ fontSize: 11, color: "#818cf8", marginBottom: 8, letterSpacing: 0.6 }}>
+                      🟦 WHILE YOU WAIT — WHY THE MARKER MATTERS
+                    </div>
+                    <p style={{ fontSize: 13, color: "#c4b5fd", lineHeight: 1.7, margin: 0 }}>
+                      Every AgentYap cast carries a 🟦 marker so anyone reading it instantly
+                      knows: AI drafted it, a human reviewed it, and nothing posts without
+                      your approval. No black-box bots posting as you — just transparent,
+                      attributed help. That&apos;s the whole idea behind HIP: AI assists,
+                      you stay in control, the blockchain keeps it honest.
+                    </p>
                   </div>
 
                   {pollSeconds >= 20 && (
