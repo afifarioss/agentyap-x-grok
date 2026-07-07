@@ -5,8 +5,6 @@
 // 3. setPollSeconds(0) uses queueMicrotask
 // 4. All useEffect dependencies added
 // 5. Unused catch vars removed
-// 6. FIX: Accept neynar signer response even when mode field is missing
-//    (infers "neynar" mode from presence of signer_uuid + approval_url)
 
 'use client';
 
@@ -187,13 +185,8 @@ export default function AgentYap() {
           return;
         }
 
-        // FIX: Accept neynar response even when mode field is missing.
-        // If backend returns signer_uuid + approval_url, infer neynar mode.
-        if (
-          (data.mode === "neynar" || (data.signer_uuid && data.approval_url)) &&
-          data.signer_uuid &&
-          data.approval_url
-        ) {
+        // STRICT CHECK: backend now returns mode: "neynar"
+        if (data.mode === "neynar" && data.signer_uuid && data.approval_url) {
           setSignerMode("neynar");
           setSignerUuid(data.signer_uuid);
           setSignerApprovalUrl(data.approval_url);
@@ -1002,4 +995,3 @@ export default function AgentYap() {
     </>
   );
 }
-
