@@ -1,6 +1,7 @@
 // app/api/create-signer/route.ts
 import { NextResponse } from "next/server";
 import { createHash, randomBytes, scryptSync, createCipheriv } from "crypto";
+import { getSignedKey } from "@/utils/getSignedKey";
 
 const KEY_REGISTRY_ADDRESS = "0x00000000Fc1237824fb747aBDE0FF18990E59b7e";
 
@@ -14,7 +15,7 @@ function getEncryptionKey(): string {
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { fid, username } = body;
+    const { fid } = body;
 
     if (!fid) {
       return NextResponse.json({ error: "FID is required" }, { status: 400 });
@@ -23,37 +24,15 @@ export async function POST(request: Request) {
     const neynarApiKey = process.env.NEYNAR_API_KEY;
     if (neynarApiKey) {
       try {
-        const neynarRes = await fetch("https://api.neynar.com/v2/farcaster/signer", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": neynarApiKey,
-          },
-          body: JSON.stringify({
-            fid: Number(fid),
-            username: username || "",
-          }),
-        });
-
-        const neynarData = await neynarRes.json().catch(() => ({}));
-
-        if (neynarRes.ok) {
-          // Return status, approval_url, and public_key so frontend can handle pending flows
-          return NextResponse.json({
-            mode: "neynar",
-            signer_uuid: neynarData.signer_uuid,
-            approval_url: neynarData.approval_url ?? neynarData.approvalUrl ?? null,
-            status: neynarData.status,
-            public_key: neynarData.public_key ?? neynarData.publicKey ?? null,
-            demo: false,
-          });
-        }
-
-        if (neynarRes.status !== 402) {
-          console.log("[create-signer] Neynar error status:", neynarRes.status, neynarData);
-        }
+        // THE REAL FIX: use getSignedKey(), which creates the signer AND
+        // registers the signed-key request against it, producing a real
+        // approval_url. The old inline logic here only ever created the
+        // signer and returned Neynar's raw (unregistered) response — that's
+        // why approval_url was always null and status always "generated".
+        const result = await getSignedKey();
+        return NextResponse.json({ ...result, demo: false });
       } catch (neynarError) {
-        console.log("[create-signer] Neynar fetch failed:", neynarError);
+        console.log("[create-signer] getSignedKey failed, falling back to hub mode:", neynarError);
       }
     }
 
