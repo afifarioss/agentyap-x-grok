@@ -32,6 +32,14 @@ const HOW_IT_WORKS = [
   { num: "3", title: "Approve and post", desc: "AgentYap drafts it. You approve before it goes to Farcaster." },
 ];
 
+const WHO_IS_THIS_FOR = [
+  "Farcaster builders sharing progress",
+  "Base builders posting updates",
+  "Creators who need content ideas",
+  "Busy parents building after hours",
+  "People who want AI help without hiding it",
+];
+
 const MAX_POLL_ATTEMPTS = 15;
 const POLL_INTERVAL_MS = 2000;
 const BACKOFF_AFTER_ATTEMPTS = 8;
@@ -373,6 +381,13 @@ export default function AgentYap() {
     }
   }
 
+  function handleChangeVibe(): void {
+    setVibe(null);
+    setPreview("");
+    setSamplePost("");
+    track("change_vibe_clicked");
+  }
+
   async function handlePost(): Promise<void> {
     if (!vibe) { setError("Pick a vibe first."); return; }
 
@@ -541,6 +556,15 @@ export default function AgentYap() {
 
           {step === "setup" && (
             <>
+              {/* FOUNDER STORY */}
+              <section style={cardStyle}>
+                <div style={labelStyle}>FOUNDER STORY</div>
+                <p style={{ color: "#d4d4d8", lineHeight: 1.7, margin: 0 }}>
+                  Built by <strong style={{ color: "#e0e0ff" }}>afifarioss</strong> — dad of 3 from Ipoh, building tools for Farcaster creators and Base builders.
+                  Family first. Always shipping.
+                </p>
+              </section>
+
               {/* HOW IT WORKS — 3 cards */}
               <section style={cardStyle}>
                 <div style={labelStyle}>HOW IT WORKS</div>
@@ -558,6 +582,19 @@ export default function AgentYap() {
                         <div style={{ color: "#e0e0ff", fontWeight: "bold", fontSize: 14 }}>{item.title}</div>
                         <div style={{ color: "#a1a1aa", fontSize: 13, lineHeight: 1.5 }}>{item.desc}</div>
                       </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* WHO IS THIS FOR? */}
+              <section style={cardStyle}>
+                <div style={labelStyle}>WHO IS THIS FOR?</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {WHO_IS_THIS_FOR.map((item) => (
+                    <div key={item} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ color: "#22c55e", fontSize: 14 }}>•</span>
+                      <span style={{ color: "#a1a1aa", fontSize: 14 }}>{item}</span>
                     </div>
                   ))}
                 </div>
@@ -685,7 +722,7 @@ export default function AgentYap() {
                 </button>
               </section>
 
-              {/* PREVIEW + EDIT — shown before sign-in */}
+              {/* PREVIEW + EDIT + REGENERATE + CHANGE VIBE — shown before sign-in */}
               {preview && (
                 <>
                   <section style={cardStyle}>
@@ -695,8 +732,45 @@ export default function AgentYap() {
                       onChange={(e) => setPreview(e.target.value)}
                       style={{ ...inputStyle, minHeight: 120, resize: "vertical" }}
                     />
-                    <div style={{ fontSize: 12, color: "#71717a", marginTop: 8, lineHeight: 1.5 }}>
-                      Edit the draft above. When you&apos;re happy with it, sign in to post.
+                    {/* EDIT CONTROLS: Regenerate + Change vibe */}
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                      <button
+                        onClick={() => void handlePreview()}
+                        disabled={isPreviewLoading}
+                        style={{
+                          flex: 1,
+                          background: isPreviewLoading ? "#1f2937" : "#1f2937",
+                          color: "#fff",
+                          padding: "12px 16px",
+                          borderRadius: 10,
+                          border: "1px solid #374151",
+                          fontWeight: "bold",
+                          cursor: isPreviewLoading ? "not-allowed" : "pointer",
+                          fontSize: 14,
+                        }}
+                      >
+                        {isPreviewLoading ? "Regenerating..." : "↻ Regenerate"}
+                      </button>
+                      <button
+                        onClick={handleChangeVibe}
+                        style={{
+                          flex: 1,
+                          background: "#020617",
+                          color: "#a1a1aa",
+                          padding: "12px 16px",
+                          borderRadius: 10,
+                          border: "1px solid #1f2937",
+                          fontWeight: "bold",
+                          cursor: "pointer",
+                          fontSize: 14,
+                        }}
+                      >
+                        Change vibe
+                      </button>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#71717a", marginTop: 10, lineHeight: 1.5 }}>
+                      Edit the draft above. Regenerate if you want a fresh take. Change vibe to switch the tone.
+                      When you&apos;re happy with it, sign in to post.
                     </div>
                   </section>
 
