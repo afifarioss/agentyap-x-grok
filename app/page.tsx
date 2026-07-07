@@ -40,8 +40,8 @@ const MAX_POLL_ATTEMPTS = 60;
 const POLL_INTERVAL_MS = 5000;
 const BACKOFF_AFTER_ATTEMPTS = 6;
 const BACKOFF_INTERVAL_MS = 10000;
-const MAX_GENERATING_RETRIES = 5;
-const GENERATING_RETRY_DELAY_MS = 2000;
+const MAX_GENERATING_RETRIES = 15;
+const GENERATING_RETRY_DELAY_MS = 3000;
 
 type Step = "setup" | "signer" | "hub-register" | "dashboard";
 type SignerStatus = "idle" | "pending" | "approved" | "timeout";
@@ -209,6 +209,7 @@ export default function AgentYap() {
         if (data.mode === "neynar" && data.status === "generated" && data.signer_uuid) {
           if (generatingRetriesRef.current < MAX_GENERATING_RETRIES) {
             generatingRetriesRef.current += 1;
+            setToast("Setting up your signer, just a moment...");
             track("signer_generating_retry", {
               signerUuid: data.signer_uuid,
               attempt: generatingRetriesRef.current,
@@ -217,7 +218,7 @@ export default function AgentYap() {
             return;
           }
           throw new Error(
-            "Signer is taking longer than usual to generate. Please tap Continue setup to try again."
+            "Setup is taking longer than usual. Tap Continue setup below to try again — this happens sometimes with Farcaster's servers, nothing wrong with your account."
           );
         }
 
