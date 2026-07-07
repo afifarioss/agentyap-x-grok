@@ -272,9 +272,23 @@ export default function AgentYap() {
     };
 
     timeoutId = setTimeout(poll, 1500);
+
+    // UX fix: when the user comes back from approving in Warpcast (tab focus
+    // regained), immediately re-check instead of making them wait for the
+    // next scheduled interval. This removes the "why isn't it moving" confusion.
+    const handleFocus = () => {
+      if (cancelled) return;
+      if (timeoutId) clearTimeout(timeoutId);
+      void poll();
+    };
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
+
     return () => {
       cancelled = true;
       if (timeoutId) clearTimeout(timeoutId);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
     };
   }, [step, signerStatus, signerUuid]);
 
