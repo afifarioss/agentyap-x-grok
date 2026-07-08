@@ -20,7 +20,6 @@ const DAILY_TYPE_PROMPTS: Record<string, string> = {
     "Write ONE short Farcaster cast under 280 characters asking your Farcaster community a genuine question. Engaging, open-ended, no fluff.",
 };
 
-// Free-tier fallback chain. Ordered by reliability.
 const MODEL_FALLBACKS = [
   "meta-llama/llama-3.3-70b-instruct:free",
   "openai/gpt-oss-120b:free",
@@ -70,7 +69,7 @@ async function tryModel(
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://agentyap-x-grok.vercel.app",
+        "HTTP-Referer": "https://agentyap-x-grok.vercel.app",
         "X-Title": "AgentYap",
         "Content-Type": "application/json",
       },
@@ -89,7 +88,6 @@ async function tryModel(
 
     clearTimeout(timeout);
 
-    // Handle non-JSON responses (e.g., cloudflare blocks, nginx errors)
     const contentType = res.headers.get("content-type") || "";
     if (!contentType.includes("application/json")) {
       const text = await res.text();
@@ -162,7 +160,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // Validate key format (OpenRouter keys start with sk-or-v1-)
   if (!apiKey.startsWith("sk-or-v1-") && !apiKey.startsWith("sk-or-")) {
     console.error("[generate-post] OPENROUTER_API_KEY has invalid format");
     return NextResponse.json(
