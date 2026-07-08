@@ -13,6 +13,10 @@ const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     ignores: [".next/**", "out/**", "build/**", "next-env.d.ts"],
+    rules: {
+      "react/no-unescaped-entities": "off",
+      "@next/next/no-img-element": "off",
+    },
   },
 ];
 
