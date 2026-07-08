@@ -5,6 +5,11 @@ import { applyHIPMarker } from "@/lib/agent-marker";
 import { signCastWithHubSigner } from "@/lib/hub-signer";
 import { Message } from "@farcaster/hub-nodejs";
 
+// The AgentYap app URL — attached as an embed to every cast so it renders
+// as a rich, clickable card (icon + "Launch AgentYap" button) in feeds.
+// This is what turns every cast into a viral distribution channel.
+const APP_URL = "https://agentyap-x-grok.vercel.app";
+
 interface NeynarCastResponse {
   cast?: { hash: string };
   message?: string;
@@ -34,7 +39,11 @@ async function postViaNeynar(
       "Content-Type": "application/json",
       "x-api-key": apiKey,
     },
-    body: JSON.stringify({ signer_uuid: signerUuid, text }),
+    body: JSON.stringify({
+      signer_uuid: signerUuid,
+      text,
+      embeds: [{ url: APP_URL }],
+    }),
     signal: AbortSignal.timeout(15_000),
   });
 
@@ -59,13 +68,18 @@ async function postViaHub(
   const hubUrl = process.env.HUB_HTTP_URL;
   if (!hubUrl) throw new Error("HUB_HTTP_URL not set");
 
-  const castMessage = await signCastWithHubSigner(encryptedPrivKey, fid, text);
+  const castMessage = await signCastWithHubSigner(
+    encryptedPrivKey,
+    fid,
+    text,
+    [APP_URL]
+  );
   const messageBytes = Message.encode(castMessage).finish();
 
   const res = await fetch(`${hubUrl}/v1/submitMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/octet-stream" },
-    body: Buffer.from(messageBytes), // <-- FIXED: was messageBytes
+    body: Buffer.from(messageBytes),
     signal: AbortSignal.timeout(15_000),
   });
 
@@ -144,4 +158,3 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     hip: hipMetadata,
   });
 }
-
