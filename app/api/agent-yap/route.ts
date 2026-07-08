@@ -27,6 +27,14 @@ Output format — always exactly this structure:
 
 Return ONLY the cast. No preamble. No quotes.`;
 
+// Verified LIVE on OpenRouter free tier, July 2026.
+// llama-4-maverick:free was pulled from free tier — removed.
+const MODEL_FALLBACKS = [
+  "openai/gpt-oss-120b:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "openai/gpt-oss-20b:free",
+];
+
 function cleanGeneratedText(text: string): string {
   return text
     .trim()
@@ -51,6 +59,58 @@ interface OpenRouterResponse {
   error?: { message?: string };
 }
 
+async function tryModel(
+  model: string,
+  apiKey: string,
+  userPrompt: string
+): Promise<{ ok: true; text: string } | { ok: false; error: string; status: number }> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12_000);
+
+  try {
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://agentyap-x-grok.vercel.app",
+        "X-Title": "AgentYap",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: AGENTYAP_SYSTEM_PROMPT },
+          { role: "user", content: userPrompt },
+        ],
+        max_tokens: 120,
+        temperature: 0.85,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+    const data: OpenRouterResponse = await res.json();
+
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: data?.error?.message ?? "Generation failed",
+        status: res.status,
+      };
+    }
+
+    const rawText = data.choices?.[0]?.message?.content?.trim();
+    if (!rawText) {
+      return { ok: false, error: "Model returned empty response", status: 502 };
+    }
+    return { ok: true, text: rawText };
+  } catch (err: unknown) {
+    clearTimeout(timeout);
+    const msg = err instanceof Error ? err.message : "Internal error";
+    return { ok: false, error: msg, status: 500 };
+  }
+}
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
   let context: string | undefined;
 
@@ -73,53 +133,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     ? `Extra context: ${context}. Write ONE cast only in AgentYap's exact voice. No preamble, just the text.`
     : "Write ONE cast only in AgentYap's exact voice about shipping on Base, agent identity, or Farcaster tooling. No preamble, just the text.";
 
-  try {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": "https://agentyap-x-grok.vercel.app",
-        "X-Title": "AgentYap",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "meta-llama/llama-4-maverick:free",
-        messages: [
-          { role: "system", content: AGENTYAP_SYSTEM_PROMPT },
-          { role: "user", content: userPrompt },
-        ],
-        max_tokens: 120,
-        temperature: 0.85,
-      }),
-      signal: AbortSignal.timeout(12_000),
-    });
+  let lastError = "Generation failed";
+  let lastStatus = 500;
 
-    const data: OpenRouterResponse = await res.json();
-
-    if (!res.ok) {
-      console.error("[agent-yap] OpenRouter error:", data);
-      return NextResponse.json(
-        { error: data?.error?.message ?? "Generation failed" },
-        { status: res.status }
-      );
+  for (const model of MODEL_FALLBACKS) {
+    const result = await tryModel(model, apiKey, userPrompt);
+    if (result.ok) {
+      const cleaned = cleanGeneratedText(result.text);
+      const marked = ensureHIPMarker(cleaned);
+      const final = marked.length > 320 ? marked.slice(0, 317) + "..." : marked;
+      return NextResponse.json({ text: final, model });
     }
-
-    const rawText = data.choices?.[0]?.message?.content?.trim();
-    if (!rawText) {
-      return NextResponse.json(
-        { error: "Model returned empty response" },
-        { status: 502 }
-      );
-    }
-
-    const cleaned = cleanGeneratedText(rawText);
-    const marked = ensureHIPMarker(cleaned);
-    const final = marked.length > 320 ? marked.slice(0, 317) + "..." : marked;
-
-    return NextResponse.json({ text: final });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Internal error";
-    console.error("[agent-yap] fatal:", err);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error(`[agent-yap] ${model} failed:`, result.error);
+    lastError = result.error;
+    lastStatus = result.status;
   }
+
+  return NextResponse.json(
+    { error: `All providers failed. Last error: ${lastError}` },
+    { status: lastStatus }
+  );
 }
