@@ -23,8 +23,8 @@ const DAILY_TYPE_PROMPTS: Record<string, string> = {
 // Fallback chain — free-tier OpenRouter models can flake independently.
 // Try each in order until one succeeds instead of failing on the first miss.
 const MODEL_FALLBACKS = [
-  "openai/gpt-oss-120b:free",
   "meta-llama/llama-3.3-70b-instruct:free",
+  "openai/gpt-oss-120b:free",
   "openai/gpt-oss-20b:free",
 ];
 
@@ -67,7 +67,7 @@ async function tryModel(
           { role: "user", content: userPrompt },
         ],
         temperature: 0.85,
-        max_tokens: 120,
+        max_tokens: 400,
       }),
       signal: controller.signal,
     });
