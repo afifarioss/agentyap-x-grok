@@ -20,6 +20,14 @@ const DAILY_TYPE_PROMPTS: Record<string, string> = {
     "Write a short Farcaster cast under 280 characters asking your Farcaster community a genuine question. Engaging, open-ended, no fluff.",
 };
 
+// Fallback chain — free-tier OpenRouter models can flake independently.
+// Try each in order until one succeeds instead of failing on the first miss.
+const MODEL_FALLBACKS = [
+  "openai/gpt-oss-120b:free",
+  "meta-llama/llama-4-maverick:free",
+  "google/gemini-2.0-flash-exp:free",
+];
+
 interface OpenRouterResponse {
   choices?: Array<{ message?: { content?: string } }>;
   error?: { message?: string };
@@ -28,10 +36,64 @@ interface OpenRouterResponse {
 function clean(text: string): string {
   return text
     .trim()
-    .replace(/^["""''']+|["""''']+$/g, "")
+    .replace(/^[""''']+|[""''']+$/g, "")
     .replace(/^Cast:\s*/i, "")
     .replace(/^Post:\s*/i, "")
     .trim();
+}
+
+async function tryModel(
+  model: string,
+  apiKey: string,
+  systemPrompt: string,
+  userPrompt: string
+): Promise<{ ok: true; text: string } | { ok: false; error: string; status: number }> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+
+  try {
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://agentyap-x-grok.vercel.app",
+        "X-Title": "AgentYap",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.85,
+        max_tokens: 120,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+    const data = (await res.json()) as OpenRouterResponse;
+
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: data?.error?.message ?? "Generation failed",
+        status: res.status,
+      };
+    }
+
+    const raw = data.choices?.[0]?.message?.content?.trim() ?? "";
+    const text = clean(raw);
+    if (!text) {
+      return { ok: false, error: "Empty response from provider", status: 502 };
+    }
+    return { ok: true, text };
+  } catch (err: unknown) {
+    clearTimeout(timeout);
+    const msg = err instanceof Error ? err.message : "Internal error";
+    return { ok: false, error: msg, status: 500 };
+  }
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -67,7 +129,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // Use dailyType prompt if provided, otherwise fall back to vibe prompt
   const systemPrompt = dailyType && DAILY_TYPE_PROMPTS[dailyType]
     ? DAILY_TYPE_PROMPTS[dailyType]
     : VIBE_PROMPTS[vibe];
@@ -81,49 +142,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .filter(Boolean)
     .join("\n");
 
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000);
+  let lastError = "Generation failed";
+  let lastStatus = 500;
 
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": "https://agentyap-x-grok.vercel.app",
-        "X-Title": "AgentYap",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-oss-120b:free",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        temperature: 0.85,
-        max_tokens: 120,
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
-
-    const data = (await res.json()) as OpenRouterResponse;
-
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: data?.error?.message ?? "Generation failed" },
-        { status: res.status }
-      );
+  for (const model of MODEL_FALLBACKS) {
+    const result = await tryModel(model, apiKey, systemPrompt, userPrompt);
+    if (result.ok) {
+      const trimmed = result.text.length > 320 ? result.text.slice(0, 317) + "..." : result.text;
+      return NextResponse.json({ text: trimmed, model });
     }
-
-    const raw = data.choices?.[0]?.message?.content?.trim() ?? "";
-    const text = clean(raw);
-    const trimmed = text.length > 320 ? text.slice(0, 317) + "..." : text;
-
-    return NextResponse.json({ text: trimmed });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Internal error";
-    console.error("[generate-post]", err);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error(`[generate-post] ${model} failed:`, result.error);
+    lastError = result.error;
+    lastStatus = result.status;
+    // keep trying the next model in the chain
   }
+
+  // All fallbacks exhausted
+  return NextResponse.json(
+    { error: `All providers failed. Last error: ${lastError}` },
+    { status: lastStatus }
+  );
 }
