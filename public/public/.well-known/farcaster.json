@@ -4,15 +4,16 @@
     "payload": "eyJkb21haW4iOiJhZ2VudHlhcC14LWdyb2sudmVyY2VsLmFwcCJ9",
     "signature": "bxpRHEbF7X5gxovIAeHXPSb4LeN2QFxMsMPK0KmENY0p2YedizZc9k4rL+3Gf4huucRmQZ7QAP2aGXNb+hGNIxw="
   },
-  "frame": {
-    "version": "next",
+  "miniapp": {
+    "version": "1",
     "name": "AgentYap",
-    "iconUrl": "https://agentyap-x-grok.vercel.app/favicon.ico",
+    "iconUrl": "https://agentyap-x-grok.vercel.app/icon.png",
     "homeUrl": "https://agentyap-x-grok.vercel.app",
-    "imageUrl": "https://agentyap-x-grok.vercel.app/og.png",
-    "buttonTitle": "Generate Cast",
-    "splashImageUrl": "https://agentyap-x-grok.vercel.app/og.png",
-    "splashBackgroundColor": "#0052FF",
-    "webhookUrl": "https://api.neynar.com/f/app/62bd9f65-e3a5-44a7-875f-7e2bd715ca3a/event"
+    "imageUrl": "https://agentyap-x-grok.vercel.app/image.png",
+    "buttonTitle": "Launch AgentYap",
+    "splashImageUrl": "https://agentyap-x-grok.vercel.app/splash.png",
+    "splashBackgroundColor": "#0a0a1a",
+    "tags": ["base", "farcaster", "ai", "agent"],
+    "primaryCategory": "social"
   }
 }
