@@ -24,8 +24,8 @@ const DAILY_TYPE_PROMPTS: Record<string, string> = {
 // Try each in order until one succeeds instead of failing on the first miss.
 const MODEL_FALLBACKS = [
   "openai/gpt-oss-120b:free",
-  "meta-llama/llama-4-maverick:free",
-  "google/gemini-2.0-flash-exp:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "openai/gpt-oss-20b:free",
 ];
 
 interface OpenRouterResponse {
