@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Verified LIVE on OpenRouter free tier.
 const MODEL_FALLBACKS = [
   "openai/gpt-oss-120b:free",
   "meta-llama/llama-3.3-70b-instruct:free",
@@ -47,7 +46,7 @@ function classifyError(status: number, message: string): string {
 }
 
 function buildSystemPrompt(vibe: string): string {
-  const base = `You are AgentYap — an AI casting agent built by Afif (@afifarioss on Farcaster).
+  return `You are AgentYap — an AI casting agent built by Afif (@afifarioss on Farcaster).
 
 You run inside Afif's Farcaster account under the Hybrid Identity Protocol (HIP).
 Every cast you write starts with: 🟦 AgentYap [HIP-1.0] | ${vibe}
@@ -71,7 +70,6 @@ Output format — always exactly this structure:
 {cast text here}
 
 Return ONLY the cast. No preamble. No quotes. No "Here is a cast" intro.`;
-  return base;
 }
 
 async function tryModel(
@@ -88,7 +86,7 @@ async function tryModel(
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://agentyap-x-grok.vercel.app",
+        "HTTP-Referer": "https://agentyap-x-grok.vercel.app",
         "X-Title": "AgentYap",
         "Content-Type": "application/json",
       },
